@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Literal
+from typing import Optional, Literal, Union, List
 
 
 class Photo(BaseModel):
@@ -11,4 +11,4 @@ class Photo(BaseModel):
 class MailingContent(BaseModel):
     content_type: Literal["photo", "text"]
     text: Optional[str] = None
-    photo: Photo
+    photo: Optional[Union[Photo | List[Photo]]] = None

@@ -1,6 +1,9 @@
 from telebot import types
 
 
+COMPLETE_EDIT_CONFIRM = "/done"
+
+
 ADMIN_COMMANDS = [
     types.BotCommand("start", "Запуск бота"),
     types.BotCommand("start_mailing", "Начать рассылку"),
