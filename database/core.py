@@ -1,23 +1,18 @@
-from peewee import PostgresqlDatabase, Model
-from dotenv import load_dotenv
 import os
+from sqlalchemy import create_engine
+
+from dotenv import load_dotenv
+
 
 load_dotenv(".env")
 
 DB_USER = os.getenv("POSTGRES_USER")
-PASSWORD_DB = os.getenv("POSTGRES_PASSWORD")
+DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 DB_NAME = os.getenv("POSTGRES_DB")
 DB_HOST = os.getenv("POSTGRES_HOST")
 DB_PORT = os.getenv("POSTGRES_PORT")
 
 
-pg_db = PostgresqlDatabase(
-    database=DB_NAME, user=DB_USER, password=PASSWORD_DB, host=DB_HOST, port=DB_PORT
-)
+DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-pg_db.database
-
-
-class BaseModel(Model):
-    class Meta:
-        database = pg_db
+engine = create_engine(DATABASE_URL, echo=True)

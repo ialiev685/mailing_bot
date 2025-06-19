@@ -1,36 +1,35 @@
-from peewee import (
-    Model,
-    CharField,
-    IntegerField,
-    ForeignKeyField,
-    BooleanField,
-    AutoField,
-)
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import String, ForeignKey, Integer, Engine
+from typing import Optional
 
-from .core import BaseModel, pg_db
+
+class BaseModel(DeclarativeBase):
+    pass
 
 
 class User(BaseModel):
-    id = AutoField(primary_key=True)
-    user_id = IntegerField(unique=True)
-    first_name = CharField()
-    last_name = CharField(null=True)
+    __tablename__ = "user"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(unique=True)
+    first_name: Mapped[str] = mapped_column(String())
+    last_name: Mapped[Optional[str]]
+
+    def __repr__(self):
+        return f"User: id={self.id}, first_name={self.first_name}, last_name={self.last_name}"
 
 
 class Subscriber(BaseModel):
-    user = ForeignKeyField(model=User, on_delete="CASCADE", unique=True)
-    chat_id = IntegerField(unique=True)
-    signed = BooleanField()
+    __tablename__ = "subscriber"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id = mapped_column(ForeignKey("user.id"))
+    chat_id: Mapped[int] = mapped_column(unique=True)
+    signed: Mapped[bool] = mapped_column(default=False)
+
+    def __repr__(self):
+        return f"Subscriber: user_id{self.user_id}, chat_id={self.chat_id}, signed={self.signed}"
 
 
-def create_table():
-    if User.table_exists() or Subscriber.table_exists():
-        print("tables created")
-        return
-
-    with pg_db:
-        pg_db.create_tables([User, Subscriber])
-
-
-if __name__ == "__main__":
-    create_table()
+def create_tables(engine: Engine):
+    BaseModel.metadata.create_all(engine)
