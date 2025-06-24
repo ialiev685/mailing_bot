@@ -4,7 +4,7 @@ from config import ADMIN_COMMANDS, USER_COMMANDS, COMPLETE_EDIT_CONFIRM
 from object_types import MailingContent
 from dotenv import load_dotenv
 
-from database.models import User, Subscriber
+from database.controllers import create_user
 
 
 import os
@@ -50,12 +50,14 @@ def subscribe(message: types.Message):
     if is_admin(message.from_user.id):
         user = message.from_user
 
+        create_user(
+            user_id=user.id,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            chat_id=message.chat.id,
+        )
+
         set_menu_for_admin(chat_id=message.chat.id)
-        # print(message)
-        # response = User.create(
-        #     first_name=user.first_name, last_name=user.last_name, user_id=user.id
-        # )
-        # print(response)
 
         bot.send_message(
             chat_id=message.chat.id,

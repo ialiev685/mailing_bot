@@ -23,7 +23,7 @@ class Subscriber(BaseModel):
     __tablename__ = "subscriber"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id = mapped_column(ForeignKey("user.id"))
+    user_id = mapped_column(ForeignKey("user.id"), unique=True)
     chat_id: Mapped[int] = mapped_column(unique=True)
     signed: Mapped[bool] = mapped_column(default=False)
 
