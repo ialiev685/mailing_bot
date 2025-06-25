@@ -1,6 +1,6 @@
 from .models import User, Subscriber
 from .core import engine
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, relationship
 from sqlalchemy import select
 from typing import Optional, Callable, Any, Union
 
@@ -17,9 +17,11 @@ def create_user(
                 session.add(user)
                 session.commit()
 
-                subscriber = Subscriber(user_id=user.id, chat_id=chat_id, signed=True)
+                subscriber = Subscriber(chat_id=chat_id, signed=True, user=user)
                 session.add(subscriber)
                 session.commit()
+
+                print("user", user, user.subscriber)
 
             except Exception as error:
                 print("ошибка при создании пользователя: ", error)
@@ -29,16 +31,43 @@ def create_user(
 def get_user(user_id: int) -> Union[User, None]:
     with Session(engine) as session:
         try:
-            result = select(User).where(User.user_id == user_id)
-            user = session.scalar(result)
-        finally:
-            session.close()
+            response = select(User).where(User.user_id == user_id)
+            user = session.scalar(response)
+
             return user
+        except Exception as error:
+            return None
 
 
-def subscribe():
-    pass
+def subscribe(user_id: int) -> Union[Subscriber, None]:
+    with Session(engine) as session:
+        try:
+            response = select(User).where(User.user_id == user_id)
+            user = session.scalar(response)
+            if user is not None:
+                user.subscriber.signed = True
+                session.commit()
+
+                return user.subscriber
+            else:
+                return None
+        except Exception as error:
+            print("ошибка при подписке пользователя: ", error)
+            return None
 
 
-def unsubscribe():
-    pass
+def unsubscribe(user_id: int) -> Union[Subscriber, None]:
+    with Session(engine) as session:
+        try:
+            response = select(User).where(User.user_id == user_id)
+            user = session.scalar(response)
+            if user is not None:
+                user.subscriber.signed = False
+                session.commit()
+
+                return user.subscriber
+            else:
+                return None
+        except Exception as error:
+            print("ошибка при отдписке пользователя: ", error)
+            return None
