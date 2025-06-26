@@ -7,11 +7,11 @@ from typing import Optional, Callable, Any, Union
 
 def create_user(
     user_id: int, first_name: str, chat_id: int, last_name: Optional[str] = None
-):
+) -> Union[User, None]:
     with Session(engine) as session:
-        user = get_user(user_id=user_id)
+        user_subscriber = get_user(user_id=user_id)
 
-        if user is None:
+        if user_subscriber is None:
             try:
                 user = User(user_id=user_id, first_name=first_name, last_name=last_name)
                 session.add(user)
@@ -24,8 +24,11 @@ def create_user(
                 print("user", user, user.subscriber)
 
             except Exception as error:
-                print("ошибка при создании пользователя: ", error)
+                print("Ошибка при создании пользователя: ", error)
                 session.rollback()
+
+                return None
+        return user
 
 
 def get_user(user_id: int) -> Union[User, None]:
@@ -36,10 +39,11 @@ def get_user(user_id: int) -> Union[User, None]:
 
             return user
         except Exception as error:
+            print("Ошибка при получении пользователя: ", error)
             return None
 
 
-def subscribe(user_id: int) -> Union[Subscriber, None]:
+def subscribe_user(user_id: int) -> Union[Subscriber, None]:
     with Session(engine) as session:
         try:
             response = select(User).where(User.user_id == user_id)
@@ -52,11 +56,11 @@ def subscribe(user_id: int) -> Union[Subscriber, None]:
             else:
                 return None
         except Exception as error:
-            print("ошибка при подписке пользователя: ", error)
+            print("Ошибка при подписке пользователя: ", error)
             return None
 
 
-def unsubscribe(user_id: int) -> Union[Subscriber, None]:
+def unsubscribe_user(user_id: int) -> Union[Subscriber, None]:
     with Session(engine) as session:
         try:
             response = select(User).where(User.user_id == user_id)
@@ -69,5 +73,5 @@ def unsubscribe(user_id: int) -> Union[Subscriber, None]:
             else:
                 return None
         except Exception as error:
-            print("ошибка при отдписке пользователя: ", error)
+            print("Ошибка при отдписке пользователя: ", error)
             return None
