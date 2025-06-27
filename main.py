@@ -105,7 +105,7 @@ def start_mailing(message: types.Message):
 
     msg = bot.send_message(
         chat_id=message.chat.id,
-        text=f"✍️ Вставьте сообщение (фото или текст, можно несколько) для рассылки.\n\n*Выполните команду {CommandNames.done.value} когда закончите вставку необходимого контента.*",
+        text=f"✍️ Вставьте сообщение (фото или текст, можно несколько) для рассылки.\n\n*Выполните команду /{CommandNames.done.value} когда закончите вставку необходимого контента.*",
         parse_mode="Markdown",
     )
 
@@ -136,7 +136,7 @@ def get_text_mailing(message: types.Message):
 
         msg = bot.send_message(
             chat_id=message.chat.id,
-            text=f"✅ Сообщение добавлено. *Отправьте еще или нажмите {CommandNames.done.value} для завершения.*",
+            text=f"✅ Сообщение добавлено. *Отправьте еще или нажмите /{CommandNames.done.value} для завершения.*",
             parse_mode="Markdown",
         )
 
