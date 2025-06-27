@@ -3,16 +3,20 @@ from telebot import types
 from config import (
     ADMIN_COMMANDS,
     USER_COMMANDS,
-    COMPLETE_EDIT_CONFIRM,
     CommandNames,
-    PATH_MAILING_DATA,
 )
-from object_types import MailingContent
+from object_types import MailingContentTypeModel, PhotoTypeModel
 from dotenv import load_dotenv
-import json
-import time
 
-from database.controllers import create_user, get_user, subscribe_user, unsubscribe_user
+from helpers import get_optimal_photo
+
+from database.controllers import (
+    create_user,
+    get_user,
+    subscribe_user,
+    unsubscribe_user,
+    add_content,
+)
 
 
 import os
@@ -101,81 +105,51 @@ def start_mailing(message: types.Message):
 
     msg = bot.send_message(
         chat_id=message.chat.id,
-        text=f"✍️ Вставьте сообщение (фото или текст, можно несколько) для рассылки.\n\n*Выполните команду {COMPLETE_EDIT_CONFIRM} когда закончите вставку необходимого контента.*",
+        text=f"✍️ Вставьте сообщение (фото или текст, можно несколько) для рассылки.\n\n*Выполните команду {CommandNames.done.value} когда закончите вставку необходимого контента.*",
         parse_mode="Markdown",
     )
 
     bot.register_next_step_handler(message=msg, callback=get_text_mailing)
 
 
-def load_json_safe():
-    try:
-        with open(PATH_MAILING_DATA, "r", encoding="utf-8") as file:
-            data = json.load(file)
-            return data if isinstance(data, list) else []
-    except json.JSONDecodeError:
-        # Если файл поврежден - возвращаем пустой список
-        return []
-    except Exception as error:
-        print("Ошибка при выгрузке контента из json файла: ", error)
-        return []
-
-
-def save_content_to_json(content_data: list[dict]):
-    try:
-        with open(PATH_MAILING_DATA, "w", encoding="utf-8") as file:
-            json.dump(content_data, file, ensure_ascii=False, indent=4)
-    except Exception as error:
-        print("Ошибка при сохранении контента для рассылки: ", error)
-
-
-def add_mailing_data(content: MailingContent):
-
-    try:
-        pass
-        parsed_data = load_json_safe()
-        content_data = content.model_dump()
-
-        parsed_data.append(content_data)
-        save_content_to_json(parsed_data)
-
-    except Exception as error:
-        print("Ошибка при добавлении контента для рассылки: ", error)
-        raise
-
-
 def get_text_mailing(message: types.Message):
     try:
-        if message.text == COMPLETE_EDIT_CONFIRM:
+        if message.text == CommandNames.done.value:
             confirm_mailing(message.chat.id)
             return
 
-        content = MailingContent(
-            content_type=message.content_type, text=message.text, photo=None
+        photo = get_optimal_photo(message.photo)
+
+        content = MailingContentTypeModel(
+            content_type=message.content_type,
+            text=message.text,
+            photo=(
+                PhotoTypeModel(
+                    file_id=photo.file_id, width=photo.width, height=photo.height
+                )
+                if photo is not None
+                else None
+            ),
         )
 
-        if message.content_type == "photo":
-            if len(message.photo) >= 3:
-                content.photo = message.photo[2]
-            else:
-                content.photo = message.photo
-
-        add_mailing_data(content)
+        add_content(content)
 
         msg = bot.send_message(
             chat_id=message.chat.id,
-            text=f"✅ Сообщение добавлено. *Отправьте еще или нажмите {COMPLETE_EDIT_CONFIRM} для завершения.*",
+            text=f"✅ Сообщение добавлено. *Отправьте еще или нажмите {CommandNames.done.value} для завершения.*",
             parse_mode="Markdown",
         )
 
         bot.register_next_step_handler(message=msg, callback=get_text_mailing)
     except Exception as error:
         print("Ошибка слушателя для вставки контента: ", error)
-        bot.send_message(
+        msg = bot.send_message(
             chat_id=message.chat.id,
             text="⚠️ Произошла ошибка при обработке сообщения. Пожалуйста, попробуйте еще раз.",
             parse_mode="Markdown",
         )
+
+        bot.register_next_step_handler(message=msg, callback=get_text_mailing)
 
 
 def confirm_mailing(chat_id: int):

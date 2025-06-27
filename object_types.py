@@ -2,13 +2,13 @@ from pydantic import BaseModel
 from typing import Optional, Literal, Union, List
 
 
-class Photo(BaseModel):
+class PhotoTypeModel(BaseModel):
     file_id: str
     width: int
     height: int
 
 
-class MailingContent(BaseModel):
+class MailingContentTypeModel(BaseModel):
     content_type: Literal["photo", "text"]
     text: Optional[str] = None
-    photo: Optional[Union[Photo | List[Photo]]] = None
+    photo: Optional[PhotoTypeModel] = None

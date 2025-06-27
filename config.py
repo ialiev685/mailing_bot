@@ -2,15 +2,13 @@ from telebot import types
 from enum import Enum
 
 
-COMPLETE_EDIT_CONFIRM = "/done"
-
-
 class CommandNames(Enum):
     start = "start"
     start_mailing = "start_mailing"
     number_subscribers = "number_subscribers"
     about = "about"
     stop = "stop"
+    done = "done"
 
 
 ADMIN_COMMANDS = [
