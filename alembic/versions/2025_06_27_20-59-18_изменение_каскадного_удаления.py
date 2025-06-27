@@ -1,8 +1,8 @@
-"""добавил relationship
+"""изменение каскадного удаления
 
-Revision ID: d24dfd01daaf
-Revises: e77b7a823c0e
-Create Date: 2025-06-25 23:56:55.683535
+Revision ID: f059a640624b
+Revises: a1dd246ee5a5
+Create Date: 2025-06-27 20:59:18.787032
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'd24dfd01daaf'
-down_revision: Union[str, None] = 'e77b7a823c0e'
+revision: str = 'f059a640624b'
+down_revision: Union[str, None] = 'a1dd246ee5a5'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
