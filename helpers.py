@@ -5,11 +5,10 @@ from telebot import types
 
 def load_json_safe(data_json: str):
     try:
-        data = json.loads(data_json)
-        return data if isinstance(data, dict) else None
+        return json.loads(data_json)
     except Exception as error:
         print("Ошибка при парсинге контента из json: ", error)
-        return None
+        raise
 
 
 def get_optimal_photo(

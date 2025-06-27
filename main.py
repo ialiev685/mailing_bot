@@ -5,7 +5,7 @@ from config import (
     USER_COMMANDS,
     CommandNames,
 )
-from object_types import MailingContentTypeModel, PhotoTypeModel
+from object_types import MailingContentTypeModel, PhotoTypeModel, RoleEnum
 from dotenv import load_dotenv
 
 from helpers import get_optimal_photo
@@ -15,7 +15,8 @@ from database.controllers import (
     get_user,
     subscribe_user,
     unsubscribe_user,
-    add_content,
+    add_mailing_content,
+    get_mailing_content,
 )
 
 
@@ -59,12 +60,17 @@ def subscribe(message: types.Message):
 
     user_subscriber = get_user(user.id)
 
+    is_admin_user = is_admin(message.from_user.id)
+
+    role = RoleEnum.ADMIN if is_admin_user else RoleEnum.USER
+
     if user_subscriber is None:
         create_user(
             user_id=user.id,
             first_name=user.first_name,
             last_name=user.last_name,
             chat_id=message.chat.id,
+            role=role,
         )
     else:
         subscribe_user(user.id)
@@ -113,6 +119,7 @@ def start_mailing(message: types.Message):
 
 
 def get_text_mailing(message: types.Message):
+    print("message", message)
     try:
         if message.text == CommandNames.done.value:
             confirm_mailing(message.chat.id)
@@ -132,7 +139,7 @@ def get_text_mailing(message: types.Message):
             ),
         )
 
-        add_content(content)
+        add_mailing_content(content)
 
         msg = bot.send_message(
             chat_id=message.chat.id,
@@ -175,7 +182,8 @@ def confirm_mailing(chat_id: int):
 )
 def handle_confirm_mailing(call: types.CallbackQuery):
     if call.data == "confirm_mailing":
-        print("Нажали да")
+        mailing_content = get_mailing_content()
+        print("get_mailing_content", mailing_content)
 
     if call.data == "cancel_mailing":
         print("Нажали нет")
