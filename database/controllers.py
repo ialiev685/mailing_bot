@@ -2,9 +2,10 @@ from .models import UserModel, SubscriberModel, MailingContentModel, RoleEnum
 from helpers import load_json_safe
 from .core import engine
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from typing import Optional, Union, Literal
 from object_types import MailingContentTypeModel, RoleEnum
+from error_handlers import AddMailingContentError
 
 
 def create_user(
@@ -88,6 +89,17 @@ def unsubscribe_user(user_id: int) -> Union[SubscriberModel, None]:
         return None
 
 
+def get_users() -> list[SubscriberModel]:
+    try:
+        with Session(engine) as session:
+            response = select(SubscriberModel).where(SubscriberModel.signed == True)
+            users = session.scalars(response).all()
+
+            return list(users)
+    except Exception as error:
+        raise
+
+
 def add_mailing_content(content_data: MailingContentTypeModel):
 
     try:
@@ -96,24 +108,21 @@ def add_mailing_content(content_data: MailingContentTypeModel):
                 content=content_data.model_dump_json()
             )
 
-            print("add_mailing_content", mailing_content)
-
             session.add(mailing_content)
             session.commit()
 
             return mailing_content
 
     except Exception as error:
-        print("Ошибка при добавлении контента в БД: ", error)
-        raise
+        raise AddMailingContentError("Ошибка при добавлении контента в БД", error)
 
 
-def get_mailing_content() -> list[MailingContentModel]:
+def get_mailing_content() -> list[MailingContentTypeModel]:
     try:
 
         with Session(engine) as session:
 
-            parsed_content = []
+            parsed_content: list[MailingContentTypeModel] = []
             response = select(MailingContentModel)
             content = session.scalars(response).all()
 
@@ -129,4 +138,11 @@ def get_mailing_content() -> list[MailingContentModel]:
 
 
 def remove_content():
-    pass
+    try:
+        with Session(engine) as session:
+            response = delete(MailingContentModel)
+            session.execute(response)
+            session.commit()
+
+    except Exception as error:
+        raise

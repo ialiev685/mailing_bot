@@ -1,14 +1,15 @@
 import json
 from typing import Union
 from telebot import types
+from error_handlers import LoadJsonError
+from object_types import MailingContentTypeModel
 
 
-def load_json_safe(data_json: str):
+def load_json_safe(data_json: str) -> MailingContentTypeModel:
     try:
-        return json.loads(data_json)
+        return MailingContentTypeModel(**json.loads(data_json))
     except Exception as error:
-        print("Ошибка при парсинге контента из json: ", error)
-        raise
+        raise LoadJsonError("Ошибка при парсинге контента из json", error)
 
 
 def get_optimal_photo(

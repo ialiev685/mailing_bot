@@ -7,16 +7,18 @@ from config import (
 )
 from object_types import MailingContentTypeModel, PhotoTypeModel, RoleEnum
 from dotenv import load_dotenv
-
+from time import sleep
 from helpers import get_optimal_photo
 
 from database.controllers import (
     create_user,
     get_user,
+    get_users,
     subscribe_user,
     unsubscribe_user,
     add_mailing_content,
     get_mailing_content,
+    remove_content,
 )
 
 
@@ -56,6 +58,7 @@ def set_menu_for_user(chat_id: int):
 
 @bot.message_handler(commands=[CommandNames.start.value])
 def subscribe(message: types.Message):
+
     user = message.from_user
 
     user_subscriber = get_user(user.id)
@@ -108,7 +111,7 @@ def unsubscribe(message: types.Message):
 
 @bot.message_handler(commands=[CommandNames.start_mailing.value])
 def start_mailing(message: types.Message):
-
+    remove_content()
     msg = bot.send_message(
         chat_id=message.chat.id,
         text=f"✍️ Вставьте сообщение (фото или текст, можно несколько) для рассылки.\n\n*Выполните команду /{CommandNames.done.value} когда закончите вставку необходимого контента.*",
@@ -119,9 +122,8 @@ def start_mailing(message: types.Message):
 
 
 def get_text_mailing(message: types.Message):
-    print("message", message)
     try:
-        if message.text == CommandNames.done.value:
+        if message.text == f"/{CommandNames.done.value}":
             confirm_mailing(message.chat.id)
             return
 
@@ -130,6 +132,7 @@ def get_text_mailing(message: types.Message):
         content = MailingContentTypeModel(
             content_type=message.content_type,
             text=message.text,
+            caption=message.caption,
             photo=(
                 PhotoTypeModel(
                     file_id=photo.file_id, width=photo.width, height=photo.height
@@ -138,7 +141,6 @@ def get_text_mailing(message: types.Message):
                 else None
             ),
         )
-
         add_mailing_content(content)
 
         msg = bot.send_message(
@@ -181,12 +183,38 @@ def confirm_mailing(chat_id: int):
     func=lambda call: call.data in ["confirm_mailing", "cancel_mailing"]
 )
 def handle_confirm_mailing(call: types.CallbackQuery):
+
+    bot.edit_message_reply_markup(
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
+        reply_markup=None,
+    )
+
     if call.data == "confirm_mailing":
+
+        users = get_users()
         mailing_content = get_mailing_content()
-        print("get_mailing_content", mailing_content)
+
+        for uses in users:
+            for content in mailing_content:
+
+                if content.content_type == "text":
+                    bot.send_message(
+                        chat_id=uses.chat_id,
+                        text=content.text,
+                        parse_mode="Markdown",
+                    )
+                if content.content_type == "photo":
+                    bot.send_photo(
+                        chat_id=uses.chat_id,
+                        caption=content.caption,
+                        photo=content.photo.file_id if content.photo else None,
+                        parse_mode="Markdown",
+                    )
+                sleep(0.5)
 
     if call.data == "cancel_mailing":
-        print("Нажали нет")
+        remove_content()
         bot.send_message(chat_id=call.message.id, text="❌ Вы отменили рассылку.")
 
 
