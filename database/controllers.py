@@ -1,10 +1,10 @@
 from .models import UserModel, SubscriberModel, MailingContentModel, RoleEnum
-from helpers import load_json_safe
+from helpers import load_json_safe, parse_and_sort_content
 from .core import engine
 from sqlalchemy.orm import Session
 from sqlalchemy import select, delete
-from typing import Optional, Union, Literal
-from object_types import MailingContentTypeModel, RoleEnum
+from typing import Optional, Union
+from object_types import RoleEnum, MailingContentType
 from error_handlers import AddMailingContentError
 
 
@@ -100,7 +100,7 @@ def get_users() -> list[SubscriberModel]:
         raise
 
 
-def add_mailing_content(content_data: MailingContentTypeModel):
+def add_mailing_content(content_data: MailingContentType):
 
     try:
         with Session(engine) as session:
@@ -117,20 +117,15 @@ def add_mailing_content(content_data: MailingContentTypeModel):
         raise AddMailingContentError("Ошибка при добавлении контента в БД", error)
 
 
-def get_mailing_content() -> list[MailingContentTypeModel]:
+def get_mailing_content():
     try:
 
         with Session(engine) as session:
 
-            parsed_content: list[MailingContentTypeModel] = []
             response = select(MailingContentModel)
             content = session.scalars(response).all()
 
-            for item in list(content):
-                parsed_item = load_json_safe(item.content)
-                parsed_content.append(parsed_item)
-
-            return parsed_content
+            return parse_and_sort_content(list(content))
 
     except Exception as error:
         print("Ошибка при получении контента в БД: ", error)

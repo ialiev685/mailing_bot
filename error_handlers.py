@@ -13,3 +13,13 @@ class AddMailingContentError(BaseError):
 
     def __str__(self):
         return f"AddMailingContentError: {self.message}. Exception: {self.other_args}"
+
+
+class UnknownContentType(BaseError):
+    def __str__(self):
+        return f"UnknownContentType: {self.message}. Exception: {self.other_args}"
+
+
+class ParseSortError(BaseError):
+    def __str__(self):
+        return f"ParseSortError: {self.message}. Exception: {self.other_args}"

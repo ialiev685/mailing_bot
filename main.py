@@ -5,10 +5,14 @@ from config import (
     USER_COMMANDS,
     CommandNames,
 )
-from object_types import MailingContentTypeModel, PhotoTypeModel, RoleEnum
+from object_types import (
+    RoleEnum,
+    MailingPhotoContentTypeModel,
+    MailingVideoContentTypeModel,
+)
 from dotenv import load_dotenv
 from time import sleep
-from helpers import get_optimal_photo
+from helpers import get_formatted_content, create_media_group
 
 from database.controllers import (
     create_user,
@@ -121,27 +125,18 @@ def start_mailing(message: types.Message):
     bot.register_next_step_handler(message=msg, callback=get_text_mailing)
 
 
+@bot.message_handler(content_types=["text", "photo", "video"])
 def get_text_mailing(message: types.Message):
+    print(message)
     try:
         if message.text == f"/{CommandNames.done.value}":
             confirm_mailing(message.chat.id)
             return
 
-        photo = get_optimal_photo(message.photo)
+        content = get_formatted_content(message)
 
-        content = MailingContentTypeModel(
-            content_type=message.content_type,
-            text=message.text,
-            caption=message.caption,
-            photo=(
-                PhotoTypeModel(
-                    file_id=photo.file_id, width=photo.width, height=photo.height
-                )
-                if photo is not None
-                else None
-            ),
-        )
-        add_mailing_content(content)
+        if content is not None:
+            add_mailing_content(content)
 
         msg = bot.send_message(
             chat_id=message.chat.id,
@@ -193,10 +188,10 @@ def handle_confirm_mailing(call: types.CallbackQuery):
     if call.data == "confirm_mailing":
 
         users = get_users()
-        mailing_content = get_mailing_content()
+        sorted_single_content, sorted_group_content = get_mailing_content()
 
         for uses in users:
-            for content in mailing_content:
+            for content in sorted_single_content:
 
                 if content.content_type == "text":
                     bot.send_message(
@@ -208,10 +203,19 @@ def handle_confirm_mailing(call: types.CallbackQuery):
                     bot.send_photo(
                         chat_id=uses.chat_id,
                         caption=content.caption,
-                        photo=content.photo.file_id if content.photo else None,
+                        photo=content.file_id,
                         parse_mode="Markdown",
                     )
+
                 sleep(0.5)
+            for key, content in sorted_group_content.items():
+                if len(content) > 0 and content[0].content_type == "photo":
+                    media = create_media_group(content, types.InputMediaPhoto)
+                    bot.send_media_group(chat_id=uses.chat_id, media=media)
+                if len(content) > 0 and content[0].content_type == "video":
+                    media = create_media_group(content, types.InputMediaVideo)
+                    bot.send_media_group(chat_id=uses.chat_id, media=media)
+        remove_content()
 
     if call.data == "cancel_mailing":
         remove_content()

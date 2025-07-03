@@ -1,20 +1,34 @@
 from pydantic import BaseModel
-from typing import Optional, Literal
+from typing import Optional, Literal, Union
 from typing import Optional
 from enum import Enum
 
 
-class PhotoTypeModel(BaseModel):
+class MailingMediaContentTypeModel(BaseModel):
     file_id: str
-    width: int
-    height: int
-
-
-class MailingContentTypeModel(BaseModel):
-    content_type: Literal["photo", "text"]
-    text: Optional[str] = None
+    media_group_id: Optional[str] = None
     caption: Optional[str] = None
-    photo: Optional[PhotoTypeModel] = None
+
+
+class MailingPhotoContentTypeModel(MailingMediaContentTypeModel):
+    content_type: Literal["photo"]
+
+
+class MailingVideoContentTypeModel(MailingMediaContentTypeModel):
+    content_type: Literal["video"]
+
+
+class MailingTextContentTypeModel(BaseModel):
+    content_type: Literal["text"]
+    text: Optional[str] = None
+    media_group_id: None = None
+
+
+MailingContentType = Union[
+    MailingPhotoContentTypeModel,
+    MailingVideoContentTypeModel,
+    MailingTextContentTypeModel,
+]
 
 
 class RoleEnum(Enum):
