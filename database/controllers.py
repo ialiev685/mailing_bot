@@ -1,11 +1,18 @@
-from .models import UserModel, SubscriberModel, MailingContentModel, RoleEnum
-from helpers import load_json_safe, parse_and_sort_content
+from .models import (
+    UserModel,
+    SubscriberModel,
+    MailingContentModel,
+    RoleEnum,
+    LastMessage,
+)
+from helpers import parse_and_sort_content, session_decorator
 from .core import engine
 from sqlalchemy.orm import Session
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, desc
 from typing import Optional, Union
 from object_types import RoleEnum, MailingContentType
-from error_handlers import AddMailingContentError
+from error_handlers import AddMailingContentError, AddLastMessageError
+from telebot import TeleBot
 
 
 def create_user(
@@ -136,6 +143,43 @@ def remove_content():
     try:
         with Session(engine) as session:
             response = delete(MailingContentModel)
+            session.execute(response)
+            session.commit()
+
+    except Exception as error:
+        raise
+
+
+@session_decorator(
+    AddLastMessageError, "Ошибка при добавлении последнего сообщения в БД"
+)
+def add_last_message(chat_id: int, text: str, session: Session):
+
+    remove_last_message()
+
+    last_message = LastMessage(chat_id=chat_id, text=text)
+    session.add(last_message)
+    session.commit()
+
+    raise AddLastMessageError("Упс")
+
+
+def get_last_message():
+    try:
+        with Session(engine) as session:
+            response = select(LastMessage).order_by(desc(LastMessage.id))
+            last_message = session.scalars(response).first()
+
+            return last_message
+
+    except Exception as error:
+        raise
+
+
+def remove_last_message():
+    try:
+        with Session(engine) as session:
+            response = delete(LastMessage)
             session.execute(response)
             session.commit()
 

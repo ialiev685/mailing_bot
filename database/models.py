@@ -1,6 +1,6 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import String, ForeignKey, JSON, Enum as SqlAcademyEnum
-from typing import Optional
+from sqlalchemy import String, ForeignKey, JSON, Enum as SqlAcademyEnum, Integer, Text
+from typing import Optional, Union
 from enum import Enum
 from typing import Any
 
@@ -48,3 +48,11 @@ class MailingContentModel(BaseModel):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     content: Mapped[str] = mapped_column(JSON, nullable=True)
+
+
+class LastMessage(BaseModel):
+    __tablename__ = "last_message"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chat_id: Mapped[int] = mapped_column(Integer())
+    text: Mapped[str] = mapped_column(Text())

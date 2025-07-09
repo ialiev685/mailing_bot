@@ -23,3 +23,8 @@ class UnknownContentType(BaseError):
 class ParseSortError(BaseError):
     def __str__(self):
         return f"ParseSortError: {self.message}. Exception: {self.other_args}"
+
+
+class AddLastMessageError(BaseError):
+    def __str__(self):
+        return f"AddLastMessageError: {self.message}. Exception: {self.other_args}"
