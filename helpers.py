@@ -1,5 +1,5 @@
 import json
-from typing import Union
+from typing import Union, Callable, Type
 from telebot import types
 from error_handlers import LoadJsonError, UnknownContentType, ParseSortError
 from object_types import (
@@ -11,6 +11,8 @@ from object_types import (
 from database.models import MailingContentModel
 from telebot import types
 from collections import defaultdict
+from database.core import engine
+from sqlalchemy.orm import Session
 
 
 def load_json_safe(data_json: str) -> MailingContentType:
@@ -31,7 +33,10 @@ def load_json_safe(data_json: str) -> MailingContentType:
         if content_type is not None:
             return models[content_type](**parsed_content)
 
-        raise
+        raise UnknownContentType("Неизвестный тип контента при парсинге json данных")
+
+    except UnknownContentType as error:
+        raise UnknownContentType(error.message)
 
     except Exception as error:
         raise LoadJsonError("Ошибка при парсинге контента из json", error)
@@ -125,3 +130,19 @@ def create_media_group(
                 )
             )
     return media
+
+
+def session_decorator(errorInstance: Type[Exception], errorMessage: str):
+    def decorator(callback: Callable):
+        def wrapper(*args, **kwargs):
+            try:
+                with Session(engine) as session:
+                    callback(*args, **kwargs, session=session)
+            except errorInstance as error:
+                raise errorInstance(errorMessage, error)
+            except Exception as error:
+                raise Exception("Произошла неизвестная ошибка при работе с БД", error)
+
+        return wrapper
+
+    return decorator

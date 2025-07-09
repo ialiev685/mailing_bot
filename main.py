@@ -7,8 +7,6 @@ from config import (
 )
 from object_types import (
     RoleEnum,
-    MailingPhotoContentTypeModel,
-    MailingVideoContentTypeModel,
 )
 from dotenv import load_dotenv
 from time import sleep
@@ -23,6 +21,8 @@ from database.controllers import (
     add_mailing_content,
     get_mailing_content,
     remove_content,
+    get_last_message,
+    add_last_message,
 )
 
 
@@ -60,6 +60,27 @@ def set_menu_for_user(chat_id: int):
     bot.set_chat_menu_button(chat_id=chat_id, menu_button=types.MenuButtonCommands())
 
 
+def send_message(chat_id: int, message_from_chat: str, send_text: str):
+
+    last_message = get_last_message()
+
+    if (
+        last_message is not None
+        and last_message.chat_id == chat_id
+        and last_message.text == message_from_chat
+    ):
+
+        return
+
+    add_last_message(chat_id=chat_id, text=send_text)
+
+    bot.send_message(
+        chat_id=chat_id,
+        text=send_text,
+        parse_mode="Markdown",
+    )
+
+
 @bot.message_handler(commands=[CommandNames.start.value])
 def subscribe(message: types.Message):
 
@@ -70,7 +91,7 @@ def subscribe(message: types.Message):
     is_admin_user = is_admin(message.from_user.id)
 
     role = RoleEnum.ADMIN if is_admin_user else RoleEnum.USER
-
+    print("message", message.text)
     if user_subscriber is None:
         create_user(
             user_id=user.id,
@@ -86,19 +107,20 @@ def subscribe(message: types.Message):
 
         set_menu_for_admin(chat_id=message.chat.id)
 
-        bot.send_message(
-            chat_id=message.chat.id,
-            text=f"Привет 👋, {message.from_user.first_name} {message.from_user.last_name}",
-            parse_mode="Markdown",
-        )
     else:
         set_menu_for_user(chat_id=message.chat.id)
 
-        bot.send_message(
-            chat_id=message.chat.id,
-            text=f"Привет 👋, {message.from_user.first_name} {message.from_user.last_name}",
-            parse_mode="Markdown",
-        )
+    # bot.send_message(
+    #     chat_id=message.chat.id,
+    #     text=f"Привет 👋, {message.from_user.first_name} {message.from_user.last_name}",
+    #     parse_mode="Markdown",
+    # )
+
+    send_message(
+        chat_id=message.chat.id,
+        send_text=f"Привет 👋, {message.from_user.first_name} {message.from_user.last_name}",
+        message_from_chat=message.text,
+    )
 
 
 @bot.message_handler(commands=[CommandNames.stop.value])
@@ -127,7 +149,7 @@ def start_mailing(message: types.Message):
 
 @bot.message_handler(content_types=["text", "photo", "video"])
 def get_text_mailing(message: types.Message):
-    print(message)
+
     try:
         if message.text == f"/{CommandNames.done.value}":
             confirm_mailing(message.chat.id)
@@ -179,11 +201,7 @@ def confirm_mailing(chat_id: int):
 )
 def handle_confirm_mailing(call: types.CallbackQuery):
 
-    bot.edit_message_reply_markup(
-        chat_id=call.message.chat.id,
-        message_id=call.message.message_id,
-        reply_markup=None,
-    )
+    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
     if call.data == "confirm_mailing":
 
@@ -207,7 +225,7 @@ def handle_confirm_mailing(call: types.CallbackQuery):
                         parse_mode="Markdown",
                     )
 
-                sleep(0.5)
+                sleep(0.3)
             for key, content in sorted_group_content.items():
                 if len(content) > 0 and content[0].content_type == "photo":
                     media = create_media_group(content, types.InputMediaPhoto)
@@ -215,6 +233,8 @@ def handle_confirm_mailing(call: types.CallbackQuery):
                 if len(content) > 0 and content[0].content_type == "video":
                     media = create_media_group(content, types.InputMediaVideo)
                     bot.send_media_group(chat_id=uses.chat_id, media=media)
+                sleep(0.3)
+
         remove_content()
 
     if call.data == "cancel_mailing":
