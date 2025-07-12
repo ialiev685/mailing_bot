@@ -68,6 +68,7 @@ def get_formatted_content(
             content_type="photo",
             file_id=get_optimal_photo(message.photo).file_id,
             media_group_id=message.media_group_id,
+            caption=message.caption,
         )
     if message.content_type == "video":
 
@@ -75,6 +76,7 @@ def get_formatted_content(
             content_type="video",
             file_id=message.video.file_id,
             media_group_id=message.media_group_id,
+            caption=message.caption,
         )
 
     return None
@@ -137,7 +139,7 @@ def session_decorator(errorInstance: Type[Exception], errorMessage: str):
         def wrapper(*args, **kwargs):
             try:
                 with Session(engine) as session:
-                    callback(*args, **kwargs, session=session)
+                    return callback(*args, **kwargs, session=session)
             except errorInstance as error:
                 raise errorInstance(errorMessage, error)
             except Exception as error:

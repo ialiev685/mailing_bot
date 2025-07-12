@@ -15,6 +15,21 @@ class AddMailingContentError(BaseError):
         return f"AddMailingContentError: {self.message}. Exception: {self.other_args}"
 
 
+class CheckMailingContentError(BaseError):
+    def __str__(self):
+        return f"CheckContentError: {self.message}. Exception: {self.other_args}"
+
+
+class GetMailingContentError(BaseError):
+    def __str__(self):
+        return f"GetContentError: {self.message}. Exception: {self.other_args}"
+
+
+class RemoveMailingContentError(BaseError):
+    def __str__(self):
+        return f"RemoveContentError: {self.message}. Exception: {self.other_args}"
+
+
 class UnknownContentType(BaseError):
     def __str__(self):
         return f"UnknownContentType: {self.message}. Exception: {self.other_args}"

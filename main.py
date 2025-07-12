@@ -11,20 +11,14 @@ from object_types import (
 from dotenv import load_dotenv
 from time import sleep
 from helpers import get_formatted_content, create_media_group
-
-from database.controllers import (
-    create_user,
-    get_user,
-    get_users,
-    subscribe_user,
-    unsubscribe_user,
-    add_mailing_content,
-    get_mailing_content,
-    remove_content,
-    get_last_message,
-    add_last_message,
+from error_handlers import (
+    AddMailingContentError,
+    CheckMailingContentError,
+    GetMailingContentError,
+    RemoveMailingContentError,
 )
 
+import database.controllers as db
 
 import os
 
@@ -60,9 +54,11 @@ def set_menu_for_user(chat_id: int):
     bot.set_chat_menu_button(chat_id=chat_id, menu_button=types.MenuButtonCommands())
 
 
-def send_message(chat_id: int, message_from_chat: str, send_text: str):
+def send_message_without_duplicates(
+    chat_id: int, message_from_chat: str, send_text: str
+):
 
-    last_message = get_last_message()
+    last_message = db.get_last_message()
 
     if (
         last_message is not None
@@ -72,7 +68,7 @@ def send_message(chat_id: int, message_from_chat: str, send_text: str):
 
         return
 
-    add_last_message(chat_id=chat_id, text=send_text)
+    db.add_last_message(chat_id=chat_id, text=send_text)
 
     bot.send_message(
         chat_id=chat_id,
@@ -81,19 +77,29 @@ def send_message(chat_id: int, message_from_chat: str, send_text: str):
     )
 
 
+def send_message_about_mailing_error(chat_id: int):
+    bot.send_message(
+        chat_id=chat_id,
+        text="⚠️ Произошла ошибка при обработке сообщения. Запустите рассылку заново.",
+        parse_mode="Markdown",
+    )
+
+    db.remove_content()
+
+
 @bot.message_handler(commands=[CommandNames.start.value])
 def subscribe(message: types.Message):
 
     user = message.from_user
 
-    user_subscriber = get_user(user.id)
+    user_subscriber = db.get_user(user.id)
 
     is_admin_user = is_admin(message.from_user.id)
 
     role = RoleEnum.ADMIN if is_admin_user else RoleEnum.USER
-    print("message", message.text)
+
     if user_subscriber is None:
-        create_user(
+        db.create_user(
             user_id=user.id,
             first_name=user.first_name,
             last_name=user.last_name,
@@ -101,7 +107,7 @@ def subscribe(message: types.Message):
             role=role,
         )
     else:
-        subscribe_user(user.id)
+        db.subscribe_user(user.id)
 
     if is_admin(message.from_user.id):
 
@@ -110,13 +116,7 @@ def subscribe(message: types.Message):
     else:
         set_menu_for_user(chat_id=message.chat.id)
 
-    # bot.send_message(
-    #     chat_id=message.chat.id,
-    #     text=f"Привет 👋, {message.from_user.first_name} {message.from_user.last_name}",
-    #     parse_mode="Markdown",
-    # )
-
-    send_message(
+    send_message_without_duplicates(
         chat_id=message.chat.id,
         send_text=f"Привет 👋, {message.from_user.first_name} {message.from_user.last_name}",
         message_from_chat=message.text,
@@ -125,7 +125,7 @@ def subscribe(message: types.Message):
 
 @bot.message_handler(commands=[CommandNames.stop.value])
 def unsubscribe(message: types.Message):
-    subscriber = unsubscribe_user(message.from_user.id)
+    subscriber = db.unsubscribe_user(message.from_user.id)
 
     if subscriber is not None and subscriber.signed is False:
         bot.send_message(
@@ -137,7 +137,7 @@ def unsubscribe(message: types.Message):
 
 @bot.message_handler(commands=[CommandNames.start_mailing.value])
 def start_mailing(message: types.Message):
-    remove_content()
+    db.remove_content()
     msg = bot.send_message(
         chat_id=message.chat.id,
         text=f"✍️ Вставьте сообщение (фото или текст, можно несколько) для рассылки.\n\n*Выполните команду /{CommandNames.done.value} когда закончите вставку необходимого контента.*",
@@ -152,13 +152,22 @@ def get_text_mailing(message: types.Message):
 
     try:
         if message.text == f"/{CommandNames.done.value}":
+
+            if db.check_content() == False:
+                msg = bot.send_message(
+                    chat_id=message.chat.id,
+                    text=f"❌ У вас нет сообщений для рассылки.",
+                    parse_mode="Markdown",
+                )
+                return
+
             confirm_mailing(message.chat.id)
             return
 
         content = get_formatted_content(message)
 
         if content is not None:
-            add_mailing_content(content)
+            db.add_mailing_content(content)
 
         msg = bot.send_message(
             chat_id=message.chat.id,
@@ -167,15 +176,12 @@ def get_text_mailing(message: types.Message):
         )
 
         bot.register_next_step_handler(message=msg, callback=get_text_mailing)
+    except CheckMailingContentError as error:
+        send_message_about_mailing_error(message.chat.id)
+    except AddMailingContentError as error:
+        send_message_about_mailing_error(message.chat.id)
     except Exception as error:
-        print("Ошибка слушателя для вставки контента: ", error)
-        msg = bot.send_message(
-            chat_id=message.chat.id,
-            text="⚠️ Произошла ошибка при обработке сообщения. Пожалуйста, попробуйте еще раз.",
-            parse_mode="Markdown",
-        )
-
-        bot.register_next_step_handler(message=msg, callback=get_text_mailing)
+        send_message_about_mailing_error(message.chat.id)
 
 
 def confirm_mailing(chat_id: int):
@@ -200,46 +206,51 @@ def confirm_mailing(chat_id: int):
     func=lambda call: call.data in ["confirm_mailing", "cancel_mailing"]
 )
 def handle_confirm_mailing(call: types.CallbackQuery):
+    try:
 
-    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+        bot.delete_message(
+            chat_id=call.message.chat.id, message_id=call.message.message_id
+        )
 
-    if call.data == "confirm_mailing":
+        if call.data == "confirm_mailing":
 
-        users = get_users()
-        sorted_single_content, sorted_group_content = get_mailing_content()
+            users = db.get_users()
 
-        for uses in users:
-            for content in sorted_single_content:
+            sorted_single_content, sorted_group_content = db.get_mailing_content()
 
-                if content.content_type == "text":
-                    bot.send_message(
-                        chat_id=uses.chat_id,
-                        text=content.text,
-                        parse_mode="Markdown",
-                    )
-                if content.content_type == "photo":
-                    bot.send_photo(
-                        chat_id=uses.chat_id,
-                        caption=content.caption,
-                        photo=content.file_id,
-                        parse_mode="Markdown",
-                    )
+            for uses in users:
+                for content in sorted_single_content:
+                    if content.content_type == "text":
+                        bot.send_message(
+                            chat_id=uses.chat_id,
+                            text=content.text,
+                            parse_mode="Markdown",
+                        )
+                    if content.content_type == "photo":
+                        bot.send_photo(
+                            chat_id=uses.chat_id,
+                            caption=content.caption,
+                            photo=content.file_id,
+                            parse_mode="Markdown",
+                        )
 
-                sleep(0.3)
-            for key, content in sorted_group_content.items():
-                if len(content) > 0 and content[0].content_type == "photo":
-                    media = create_media_group(content, types.InputMediaPhoto)
-                    bot.send_media_group(chat_id=uses.chat_id, media=media)
-                if len(content) > 0 and content[0].content_type == "video":
-                    media = create_media_group(content, types.InputMediaVideo)
-                    bot.send_media_group(chat_id=uses.chat_id, media=media)
-                sleep(0.3)
+                    sleep(0.3)
+                for key, content in sorted_group_content.items():
+                    if len(content) > 0 and content[0].content_type == "photo":
+                        media = create_media_group(content, types.InputMediaPhoto)
+                        bot.send_media_group(chat_id=uses.chat_id, media=media)
+                    if len(content) > 0 and content[0].content_type == "video":
+                        media = create_media_group(content, types.InputMediaVideo)
+                        bot.send_media_group(chat_id=uses.chat_id, media=media)
+                    sleep(0.3)
 
-        remove_content()
+            db.remove_content()
+    except Exception as error:
+        print("error", error)
 
-    if call.data == "cancel_mailing":
-        remove_content()
-        bot.send_message(chat_id=call.message.id, text="❌ Вы отменили рассылку.")
+        if call.data == "cancel_mailing":
+            db.remove_content()
+            bot.send_message(chat_id=call.message.id, text="❌ Вы отменили рассылку.")
 
 
 if __name__ == "__main__":
