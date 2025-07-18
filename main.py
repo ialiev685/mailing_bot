@@ -8,6 +8,7 @@ from config import (
 from object_types import (
     RoleEnum,
 )
+from typing import Union
 from dotenv import load_dotenv
 from time import sleep
 from helpers import get_formatted_content, create_media_group
@@ -16,15 +17,16 @@ from error_handlers import (
     CheckMailingContentError,
     GetMailingContentError,
     RemoveMailingContentError,
+    RemoveLastMessageError,
 )
-
+import requests
 import database.controllers as db
 
 import os
 
 
 load_dotenv(".env")
-
+# https://api.telegram.org/bot123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11/getMe
 
 API_TOKEN = os.getenv("BOT_TOKEN", None)
 ADMIN_ID = os.getenv("ADMIN_ID", None)
@@ -54,34 +56,51 @@ def set_menu_for_user(chat_id: int):
     bot.set_chat_menu_button(chat_id=chat_id, menu_button=types.MenuButtonCommands())
 
 
-def send_message_without_duplicates(
-    chat_id: int, message_from_chat: str, send_text: str
-):
+def get_and_send_message_without_duplicates(
+    chat_id: int, send_text: str, reply_markup: types.InlineKeyboardMarkup = None
+) -> Union[types.Message, None]:
 
     last_message = db.get_last_message()
+    # print("args send_text", send_text)
+    print("last_message_id", last_message.message_id)
+    try:
+        # updates = requests.get(
+        #     url=f"https://api.telegram.org/bot{API_TOKEN}/getHistory",
+        #     params={"limit": 10, "offset_id": last_message.message_id},
+        # )
+        # print("updates", updates.json())
 
-    if (
-        last_message is not None
-        and last_message.chat_id == chat_id
-        and last_message.text == message_from_chat
-    ):
+        if (
+            last_message
+            and last_message.chat_id == chat_id
+            and last_message.text == send_text
+            and last_message.message_id
+        ):
+            print("==", last_message.text, send_text)
+            print("del message", last_message.message_id)
+            bot.delete_message(
+                chat_id=last_message.chat_id, message_id=last_message.message_id
+            )
+    except Exception as error:
+        print("error message", last_message.message_id)
+        raise RemoveLastMessageError("Ошибка при удалении последнего сообщения", error)
 
-        return
-
-    db.add_last_message(chat_id=chat_id, text=send_text)
-
-    bot.send_message(
+    msg = bot.send_message(
         chat_id=chat_id,
         text=send_text,
         parse_mode="Markdown",
+        reply_markup=reply_markup,
     )
+
+    db.add_last_message(chat_id=chat_id, text=send_text, message_id=msg.message_id)
+
+    return msg
 
 
 def send_message_about_mailing_error(chat_id: int):
-    bot.send_message(
+    get_and_send_message_without_duplicates(
         chat_id=chat_id,
-        text="⚠️ Произошла ошибка при обработке сообщения. Запустите рассылку заново.",
-        parse_mode="Markdown",
+        send_text="⚠️ Произошла ошибка при обработке сообщения. Запустите рассылку заново.",
     )
 
     db.remove_content()
@@ -116,10 +135,9 @@ def subscribe(message: types.Message):
     else:
         set_menu_for_user(chat_id=message.chat.id)
 
-    send_message_without_duplicates(
+    get_and_send_message_without_duplicates(
         chat_id=message.chat.id,
         send_text=f"Привет 👋, {message.from_user.first_name} {message.from_user.last_name}",
-        message_from_chat=message.text,
     )
 
 
@@ -138,10 +156,10 @@ def unsubscribe(message: types.Message):
 @bot.message_handler(commands=[CommandNames.start_mailing.value])
 def start_mailing(message: types.Message):
     db.remove_content()
-    msg = bot.send_message(
+
+    msg = get_and_send_message_without_duplicates(
         chat_id=message.chat.id,
-        text=f"✍️ Вставьте сообщение (фото или текст, можно несколько) для рассылки.\n\n*Выполните команду /{CommandNames.done.value} когда закончите вставку необходимого контента.*",
-        parse_mode="Markdown",
+        send_text=f"✍️ Вставьте сообщение (фото или текст, можно несколько) для рассылки.\n\n*Выполните команду /{CommandNames.done.value} когда закончите вставку необходимого контента.*",
     )
 
     bot.register_next_step_handler(message=msg, callback=get_text_mailing)
@@ -154,10 +172,9 @@ def get_text_mailing(message: types.Message):
         if message.text == f"/{CommandNames.done.value}":
 
             if db.check_content() == False:
-                msg = bot.send_message(
+                get_and_send_message_without_duplicates(
                     chat_id=message.chat.id,
-                    text=f"❌ У вас нет сообщений для рассылки.",
-                    parse_mode="Markdown",
+                    send_text=f"❌ У вас нет сообщений для рассылки.",
                 )
                 return
 
@@ -169,18 +186,23 @@ def get_text_mailing(message: types.Message):
         if content is not None:
             db.add_mailing_content(content)
 
-        msg = bot.send_message(
+        msg = get_and_send_message_without_duplicates(
             chat_id=message.chat.id,
-            text=f"✅ Сообщение добавлено. *Отправьте еще или нажмите /{CommandNames.done.value} для завершения.*",
-            parse_mode="Markdown",
+            send_text=f"✅ Сообщение добавлено. *Отправьте еще или нажмите /{CommandNames.done.value} для завершения.*",
         )
 
         bot.register_next_step_handler(message=msg, callback=get_text_mailing)
     except CheckMailingContentError as error:
+        print(error)
         send_message_about_mailing_error(message.chat.id)
     except AddMailingContentError as error:
+        print(error)
+        send_message_about_mailing_error(message.chat.id)
+    except RemoveLastMessageError as error:
+        print(error)
         send_message_about_mailing_error(message.chat.id)
     except Exception as error:
+        print(error)
         send_message_about_mailing_error(message.chat.id)
 
 
@@ -194,10 +216,9 @@ def confirm_mailing(chat_id: int):
     )
     markup_object.add(button_confirm, button_cancel)
 
-    bot.send_message(
+    get_and_send_message_without_duplicates(
         chat_id=chat_id,
-        text="🚀 Вы действительно хотите выполнить рассылку?",
-        parse_mode="Markdown",
+        send_text="🚀 Вы действительно хотите выполнить рассылку?",
         reply_markup=markup_object,
     )
 
@@ -245,12 +266,12 @@ def handle_confirm_mailing(call: types.CallbackQuery):
                     sleep(0.3)
 
             db.remove_content()
-    except Exception as error:
-        print("error", error)
 
         if call.data == "cancel_mailing":
             db.remove_content()
             bot.send_message(chat_id=call.message.id, text="❌ Вы отменили рассылку.")
+    except Exception as error:
+        print("error", error)
 
 
 if __name__ == "__main__":

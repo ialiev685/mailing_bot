@@ -54,5 +54,6 @@ class LastMessage(BaseModel):
     __tablename__ = "last_message"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    message_id: Mapped[int] = mapped_column(Integer(), default=None, nullable=True)
     chat_id: Mapped[int] = mapped_column(Integer())
     text: Mapped[str] = mapped_column(Text())

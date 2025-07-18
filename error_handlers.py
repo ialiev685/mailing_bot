@@ -43,3 +43,8 @@ class ParseSortError(BaseError):
 class AddLastMessageError(BaseError):
     def __str__(self):
         return f"AddLastMessageError: {self.message}. Exception: {self.other_args}"
+
+
+class RemoveLastMessageError(BaseError):
+    def __str__(self):
+        return f"DeleteLastMessageError: {self.message}. Exception: {self.other_args}"
