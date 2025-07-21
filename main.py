@@ -62,7 +62,6 @@ def get_and_send_message_without_duplicates(
 ) -> Union[types.Message, None]:
 
     last_message = db.get_last_message()
-    # print("args send_text", send_text)
 
     try:
 
@@ -178,6 +177,9 @@ def get_text_mailing(message: types.Message):
                 return
 
             confirm_mailing(message.chat.id)
+            return
+        if message.text == f"/{CommandNames.start_mailing.value}":
+            start_mailing(message=message)
             return
 
         content = get_formatted_content(message)
