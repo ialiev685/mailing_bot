@@ -48,3 +48,28 @@ class AddLastMessageError(BaseError):
 class RemoveLastMessageError(BaseError):
     def __str__(self):
         return f"DeleteLastMessageError: {self.message}. Exception: {self.other_args}"
+
+
+class GetLastMessageError(BaseError):
+    def __str__(self):
+        return f"GetLastMessageError: {self.message}. Exception: {self.other_args}"
+
+
+class CreateUserError(BaseError):
+    def __str__(self):
+        return f"CreateUserError: {self.message}. Exception: {self.other_args}"
+
+
+class GetUserError(BaseError):
+    def __str__(self):
+        return f"GetUserError: {self.message}. Exception: {self.other_args}"
+
+
+class AddUserError(BaseError):
+    def __str__(self):
+        return f"AddUserError: {self.message}. Exception: {self.other_args}"
+
+
+class RemoveUserError(BaseError):
+    def __str__(self):
+        return f"RemoveUserError: {self.message}. Exception: {self.other_args}"

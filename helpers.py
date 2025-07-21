@@ -141,8 +141,10 @@ def session_decorator(errorInstance: Type[Exception], errorMessage: str):
                 with Session(engine) as session:
                     return callback(*args, **kwargs, session=session)
             except errorInstance as error:
+                session.rollback()
                 raise errorInstance(errorMessage, error)
             except Exception as error:
+                session.rollback()
                 raise Exception("Произошла неизвестная ошибка при работе с БД", error)
 
         return wrapper
