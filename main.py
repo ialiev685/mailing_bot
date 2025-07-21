@@ -21,9 +21,10 @@ from error_handlers import (
 )
 import requests
 import database.controllers as db
-
+from threading import Lock
 import os
 
+lock = Lock()
 
 load_dotenv(".env")
 # https://api.telegram.org/bot123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11/getMe
@@ -62,13 +63,8 @@ def get_and_send_message_without_duplicates(
 
     last_message = db.get_last_message()
     # print("args send_text", send_text)
-    print("last_message_id", last_message.message_id)
+
     try:
-        # updates = requests.get(
-        #     url=f"https://api.telegram.org/bot{API_TOKEN}/getHistory",
-        #     params={"limit": 10, "offset_id": last_message.message_id},
-        # )
-        # print("updates", updates.json())
 
         if (
             last_message
@@ -76,8 +72,7 @@ def get_and_send_message_without_duplicates(
             and last_message.text == send_text
             and last_message.message_id
         ):
-            print("==", last_message.text, send_text)
-            print("del message", last_message.message_id)
+
             bot.delete_message(
                 chat_id=last_message.chat_id, message_id=last_message.message_id
             )
@@ -167,8 +162,12 @@ def start_mailing(message: types.Message):
 
 @bot.message_handler(content_types=["text", "photo", "video"])
 def get_text_mailing(message: types.Message):
-
     try:
+        # Плокируем поток - останавливаем выполнение паралельных функций
+        # При отправке нескольких файлов, хэндер срабатывает по количеству файлов.
+        # Вызывы срабатывают паральено в разных потоках, из-чего обращаются к БД одновременно по одинаковому id.
+        # В данном случае удалению по одинакову id вызвает ошибку т к одна из-за вызванных функций произвела удаление.
+        lock.acquire()
         if message.text == f"/{CommandNames.done.value}":
 
             if db.check_content() == False:
@@ -204,6 +203,9 @@ def get_text_mailing(message: types.Message):
     except Exception as error:
         print(error)
         send_message_about_mailing_error(message.chat.id)
+    finally:
+        # После завершения функции, отпускаем блокировку потока
+        lock.release()
 
 
 def confirm_mailing(chat_id: int):
