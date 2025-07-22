@@ -47,31 +47,13 @@ def get_user(
     return user
 
 
-@session_decorator(AddUserError, "Ошибка при добавлении пользователя в БД: ")
-def subscribe_user(
-    user_id: int,
-    session: Session,
-) -> Union[SubscriberModel, None]:
-    response = select(UserModel).where(UserModel.user_id == user_id)
-    user = session.scalar(response)
-    if user is not None:
-        user.subscriber.signed = True
-        session.commit()
-        return user.subscriber
-    else:
-        return None
-
-
 @session_decorator(RemoveUserError, "Ошибка при удалении пользователя из БД: ")
-def unsubscribe_user(user_id: int, session: Session) -> Union[SubscriberModel, None]:
+def unsubscribe_user(user_id: int, session: Session):
     response = select(UserModel).where(UserModel.user_id == user_id)
     user = session.scalar(response)
     if user is not None:
-        user.subscriber.signed = False
+        session.delete(user)
         session.commit()
-        return user.subscriber
-    else:
-        return None
 
 
 @session_decorator(GetUserError, "Ошибка при полчения пользователей из БД: ")
