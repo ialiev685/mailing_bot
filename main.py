@@ -12,14 +12,8 @@ from typing import Union
 from dotenv import load_dotenv
 from time import sleep
 from helpers import get_formatted_content, create_media_group
-from error_handlers import (
-    AddMailingContentError,
-    CheckMailingContentError,
-    GetMailingContentError,
-    RemoveMailingContentError,
-    RemoveLastMessageError,
-)
-import requests
+from helpers import handler_error_decorator
+from error_handlers import RemoveLastMessageError
 import database.controllers as db
 from threading import Lock
 import os
@@ -27,7 +21,7 @@ import os
 lock = Lock()
 
 load_dotenv(".env")
-# https://api.telegram.org/bot123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11/getMe
+
 
 API_TOKEN = os.getenv("BOT_TOKEN", None)
 ADMIN_ID = os.getenv("ADMIN_ID", None)
@@ -76,7 +70,6 @@ def get_and_send_message_without_duplicates(
                 chat_id=last_message.chat_id, message_id=last_message.message_id
             )
     except Exception as error:
-        print("error message", last_message.message_id)
         raise RemoveLastMessageError("Ошибка при удалении последнего сообщения", error)
 
     msg = bot.send_message(
@@ -92,6 +85,7 @@ def get_and_send_message_without_duplicates(
 
 
 def send_message_about_mailing_error(chat_id: int):
+
     get_and_send_message_without_duplicates(
         chat_id=chat_id,
         send_text="⚠️ Произошла ошибка при обработке сообщения. Запустите рассылку заново.",
@@ -100,9 +94,9 @@ def send_message_about_mailing_error(chat_id: int):
     db.remove_content()
 
 
+@handler_error_decorator
 @bot.message_handler(commands=[CommandNames.start.value])
 def subscribe(message: types.Message):
-
     user = message.from_user
 
     user_subscriber = db.get_user(user.id)
@@ -119,8 +113,6 @@ def subscribe(message: types.Message):
             chat_id=message.chat.id,
             role=role,
         )
-    else:
-        db.subscribe_user(user.id)
 
     if is_admin(message.from_user.id):
 
@@ -135,18 +127,20 @@ def subscribe(message: types.Message):
     )
 
 
+@handler_error_decorator
 @bot.message_handler(commands=[CommandNames.stop.value])
 def unsubscribe(message: types.Message):
-    subscriber = db.unsubscribe_user(message.from_user.id)
 
-    if subscriber is not None and subscriber.signed is False:
-        bot.send_message(
-            chat_id=message.chat.id,
-            text=f"Вы отписались 😢",
-            parse_mode="Markdown",
-        )
+    db.unsubscribe_user(message.from_user.id)
+
+    bot.send_message(
+        chat_id=message.chat.id,
+        text=f"Вы отписались 😢",
+        parse_mode="Markdown",
+    )
 
 
+@handler_error_decorator
 @bot.message_handler(commands=[CommandNames.start_mailing.value])
 def start_mailing(message: types.Message):
     db.remove_content()
@@ -159,6 +153,7 @@ def start_mailing(message: types.Message):
     bot.register_next_step_handler(message=msg, callback=get_text_mailing)
 
 
+@handler_error_decorator
 @bot.message_handler(content_types=["text", "photo", "video"])
 def get_text_mailing(message: types.Message):
     try:
@@ -193,23 +188,13 @@ def get_text_mailing(message: types.Message):
         )
 
         bot.register_next_step_handler(message=msg, callback=get_text_mailing)
-    except CheckMailingContentError as error:
-        print(error)
-        send_message_about_mailing_error(message.chat.id)
-    except AddMailingContentError as error:
-        print(error)
-        send_message_about_mailing_error(message.chat.id)
-    except RemoveLastMessageError as error:
-        print(error)
-        send_message_about_mailing_error(message.chat.id)
-    except Exception as error:
-        print(error)
-        send_message_about_mailing_error(message.chat.id)
+
     finally:
         # После завершения функции, отпускаем блокировку потока
         lock.release()
 
 
+@handler_error_decorator
 def confirm_mailing(chat_id: int):
     markup_object = types.InlineKeyboardMarkup()
     button_confirm = types.InlineKeyboardButton(
@@ -227,55 +212,50 @@ def confirm_mailing(chat_id: int):
     )
 
 
+@handler_error_decorator
 @bot.callback_query_handler(
     func=lambda call: call.data in ["confirm_mailing", "cancel_mailing"]
 )
 def handle_confirm_mailing(call: types.CallbackQuery):
-    try:
+    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
-        bot.delete_message(
-            chat_id=call.message.chat.id, message_id=call.message.message_id
-        )
+    if call.data == "confirm_mailing":
 
-        if call.data == "confirm_mailing":
+        users = db.get_users()
 
-            users = db.get_users()
+        sorted_single_content, sorted_group_content = db.get_mailing_content()
 
-            sorted_single_content, sorted_group_content = db.get_mailing_content()
+        for uses in users:
+            for content in sorted_single_content:
+                if content.content_type == "text":
+                    bot.send_message(
+                        chat_id=uses.chat_id,
+                        text=content.text,
+                        parse_mode="Markdown",
+                    )
+                if content.content_type == "photo":
+                    bot.send_photo(
+                        chat_id=uses.chat_id,
+                        caption=content.caption,
+                        photo=content.file_id,
+                        parse_mode="Markdown",
+                    )
 
-            for uses in users:
-                for content in sorted_single_content:
-                    if content.content_type == "text":
-                        bot.send_message(
-                            chat_id=uses.chat_id,
-                            text=content.text,
-                            parse_mode="Markdown",
-                        )
-                    if content.content_type == "photo":
-                        bot.send_photo(
-                            chat_id=uses.chat_id,
-                            caption=content.caption,
-                            photo=content.file_id,
-                            parse_mode="Markdown",
-                        )
+                sleep(0.3)
+            for key, content in sorted_group_content.items():
+                if len(content) > 0 and content[0].content_type == "photo":
+                    media = create_media_group(content, types.InputMediaPhoto)
+                    bot.send_media_group(chat_id=uses.chat_id, media=media)
+                if len(content) > 0 and content[0].content_type == "video":
+                    media = create_media_group(content, types.InputMediaVideo)
+                    bot.send_media_group(chat_id=uses.chat_id, media=media)
+                sleep(0.3)
 
-                    sleep(0.3)
-                for key, content in sorted_group_content.items():
-                    if len(content) > 0 and content[0].content_type == "photo":
-                        media = create_media_group(content, types.InputMediaPhoto)
-                        bot.send_media_group(chat_id=uses.chat_id, media=media)
-                    if len(content) > 0 and content[0].content_type == "video":
-                        media = create_media_group(content, types.InputMediaVideo)
-                        bot.send_media_group(chat_id=uses.chat_id, media=media)
-                    sleep(0.3)
+        db.remove_content()
 
-            db.remove_content()
-
-        if call.data == "cancel_mailing":
-            db.remove_content()
-            bot.send_message(chat_id=call.message.id, text="❌ Вы отменили рассылку.")
-    except Exception as error:
-        print("error", error)
+    if call.data == "cancel_mailing":
+        db.remove_content()
+        bot.send_message(chat_id=call.message.id, text="❌ Вы отменили рассылку.")
 
 
 if __name__ == "__main__":

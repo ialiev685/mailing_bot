@@ -13,6 +13,15 @@ from telebot import types
 from collections import defaultdict
 from database.core import engine
 from sqlalchemy.orm import Session
+import error_handlers as error_instance
+import logging
+
+
+logging.basicConfig(
+    filename="logs.log",
+    level=logging.INFO,
+    format="%{asctime}s - %(funcName)s - %(levelname)s - %(message)s",
+)
 
 
 def load_json_safe(data_json: str) -> MailingContentType:
@@ -150,3 +159,33 @@ def session_decorator(errorInstance: Type[Exception], errorMessage: str):
         return wrapper
 
     return decorator
+
+
+def handler_error_decorator(callback: Callable):
+    def wrapper(*args, **kwargs):
+
+        error_classes = (
+            error_instance.AddLastMessageError,
+            error_instance.AddMailingContentError,
+            error_instance.AddUserError,
+            error_instance.CheckMailingContentError,
+            error_instance.CreateUserError,
+            error_instance.GetLastMessageError,
+            error_instance.GetUserError,
+            error_instance.GetMailingContentError,
+            error_instance.LoadJsonError,
+            error_instance.RemoveUserError,
+            error_instance.RemoveLastMessageError,
+            error_instance.RemoveMailingContentError,
+            error_instance.ParseSortError,
+            error_instance.UnknownContentType,
+        )
+
+        try:
+            callback(*args, **kwargs)
+        except error_classes as error:
+            logging.error(error)
+        except Exception as error:
+            logging.error(f"Unexpected error: {error}")
+
+    return wrapper
