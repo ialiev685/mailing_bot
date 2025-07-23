@@ -17,11 +17,7 @@ import error_handlers as error_instance
 import logging
 
 
-logging.basicConfig(
-    filename="logs.log",
-    level=logging.INFO,
-    format="%{asctime}s - %(funcName)s - %(levelname)s - %(message)s",
-)
+logger = logging.getLogger(__name__)
 
 
 def load_json_safe(data_json: str) -> MailingContentType:
@@ -182,10 +178,10 @@ def handler_error_decorator(callback: Callable):
         )
 
         try:
-            callback(*args, **kwargs)
+            return callback(*args, **kwargs)
         except error_classes as error:
-            logging.error(error)
+            logger.error(error)
         except Exception as error:
-            logging.error(f"Unexpected error: {error}")
+            logger.error(error)
 
     return wrapper

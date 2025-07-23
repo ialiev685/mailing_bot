@@ -17,6 +17,10 @@ from error_handlers import RemoveLastMessageError
 import database.controllers as db
 from threading import Lock
 import os
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 lock = Lock()
 
@@ -94,15 +98,12 @@ def send_message_about_mailing_error(chat_id: int):
     db.remove_content()
 
 
-@handler_error_decorator
 @bot.message_handler(commands=[CommandNames.start.value])
+@handler_error_decorator
 def subscribe(message: types.Message):
     user = message.from_user
-
     user_subscriber = db.get_user(user.id)
-
     is_admin_user = is_admin(message.from_user.id)
-
     role = RoleEnum.ADMIN if is_admin_user else RoleEnum.USER
 
     if user_subscriber is None:
@@ -127,8 +128,8 @@ def subscribe(message: types.Message):
     )
 
 
-@handler_error_decorator
 @bot.message_handler(commands=[CommandNames.stop.value])
+@handler_error_decorator
 def unsubscribe(message: types.Message):
 
     db.unsubscribe_user(message.from_user.id)
@@ -140,8 +141,8 @@ def unsubscribe(message: types.Message):
     )
 
 
-@handler_error_decorator
 @bot.message_handler(commands=[CommandNames.start_mailing.value])
+@handler_error_decorator
 def start_mailing(message: types.Message):
     db.remove_content()
 
@@ -153,8 +154,8 @@ def start_mailing(message: types.Message):
     bot.register_next_step_handler(message=msg, callback=get_text_mailing)
 
 
-@handler_error_decorator
 @bot.message_handler(content_types=["text", "photo", "video"])
+@handler_error_decorator
 def get_text_mailing(message: types.Message):
     try:
         # Плокируем поток - останавливаем выполнение паралельных функций
@@ -212,10 +213,10 @@ def confirm_mailing(chat_id: int):
     )
 
 
-@handler_error_decorator
 @bot.callback_query_handler(
     func=lambda call: call.data in ["confirm_mailing", "cancel_mailing"]
 )
+@handler_error_decorator
 def handle_confirm_mailing(call: types.CallbackQuery):
     bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
@@ -258,8 +259,17 @@ def handle_confirm_mailing(call: types.CallbackQuery):
         bot.send_message(chat_id=call.message.id, text="❌ Вы отменили рассылку.")
 
 
+def init_logger_config():
+    logging.basicConfig(
+        filename="logs.log",
+        level=logging.INFO,
+        format="%(asctime)s - строка:%(lineno)s - %(levelname)s - %(message)s",
+    )
+
+
 if __name__ == "__main__":
     try:
+        init_logger_config()
         bot.infinity_polling(restart_on_change=True)
     except Exception as error:
         print("error by start server:", error)
