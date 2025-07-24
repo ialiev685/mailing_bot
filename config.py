@@ -12,9 +12,10 @@ class CommandNames(Enum):
 
 
 ADMIN_COMMANDS = [
-    # types.BotCommand(CommandNames.start.value, "Запуск бота"),
+    types.BotCommand(CommandNames.start.value, "Запуск бота"),
     types.BotCommand(CommandNames.start_mailing.value, "Начать рассылку"),
     types.BotCommand(CommandNames.number_subscribers.value, "Число подписчиков"),
+    types.BotCommand(CommandNames.stop.value, "Отписаться"),
 ]
 
 
