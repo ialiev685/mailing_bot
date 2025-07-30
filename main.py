@@ -59,7 +59,7 @@ def get_and_send_message_without_duplicates(
     chat_id: int, send_text: str, reply_markup: types.InlineKeyboardMarkup = None
 ) -> Union[types.Message, None]:
 
-    last_message = db.get_last_message()
+    last_message = db.get_last_message(chat_id=chat_id)
 
     try:
 
@@ -263,7 +263,7 @@ def init_logger_config():
     logging.basicConfig(
         filename="logs.log",
         level=logging.INFO,
-        format="%(asctime)s - строка:%(lineno)s - %(levelname)s - %(message)s",
+        format="%(asctime)s - %(filename)s - строка:%(lineno)s - %(levelname)s - %(message)s",
     )
 
 

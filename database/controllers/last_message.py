@@ -17,7 +17,7 @@ from error_handlers import (
 )
 def add_last_message(chat_id: int, text: str, message_id: int, session: Session):
 
-    remove_last_message()
+    remove_last_message(chat_id=chat_id)
 
     last_message = LastMessage(chat_id=chat_id, text=text, message_id=message_id)
     session.add(last_message)
@@ -27,8 +27,12 @@ def add_last_message(chat_id: int, text: str, message_id: int, session: Session)
 @session_decorator(
     GetLastMessageError, "Ошибка при получении последнего сообщения из БД: "
 )
-def get_last_message(session: Session):
-    response = select(LastMessage).order_by(desc(LastMessage.id))
+def get_last_message(chat_id: int, session: Session):
+    response = (
+        select(LastMessage)
+        .where(LastMessage.chat_id == chat_id)
+        .order_by(desc(LastMessage.id))
+    )
     last_message = session.scalars(response).first()
     return last_message
 
@@ -36,7 +40,7 @@ def get_last_message(session: Session):
 @session_decorator(
     RemoveLastMessageError, "Ошибка при удалении последнего сообщения из БД: "
 )
-def remove_last_message(session: Session):
-    response = delete(LastMessage)
+def remove_last_message(chat_id: int, session: Session):
+    response = delete(LastMessage).where(LastMessage.chat_id == chat_id)
     session.execute(response)
     session.commit()
