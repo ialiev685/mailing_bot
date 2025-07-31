@@ -15,7 +15,8 @@ make migrate NAME='Описание'
 
 2. Создать БД
 
-docker exec -it container_name psql -U user -d postgres
+docker exec -it container_name psql -U user -d postgres или если через docker терминал - psql -U user -d postgres
+user - имя юзера при создании контейнеров
 container_name - имя запущенные
 postgres - имя базы данных по умолчанию
 
