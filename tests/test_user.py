@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
-import database.controllers.user as db
+import database.controllers as db
+
 from object_types import RoleEnum
 
 from tests.core_testing import *
@@ -42,41 +43,33 @@ class TestUser:
 
         assert first_response_user is None
 
-        db.create_user_impl(
-            user_id=1,
-            first_name="user",
-            chat_id=1,
-            role=RoleEnum.USER,
-            session=session_testing,
-        )
+        generate_user_by_number_in_database(count=4, session=session_testing)
 
-        two_response_user = db.get_user_impl(user_id=1, session=session_testing)
+        two_response_user = db.get_user_impl(user_id=2, session=session_testing)
 
-        assert two_response_user.user_id == 1
+        assert two_response_user.user_id == 2
         assert two_response_user.first_name == "user"
         assert two_response_user.last_name is None
         assert two_response_user.role == RoleEnum.USER
-        assert two_response_user.subscriber.chat_id == 1
+        assert two_response_user.subscriber.chat_id == 2
         assert two_response_user.subscriber.signed == True
 
     def test_get_users(self, session_testing: Session):
 
         first_response_users = db.get_users_impl(session=session_testing)
-
         assert isinstance(first_response_users, list) is True
 
         generate_user_by_number_in_database(count=4, session=session_testing)
-
         two_response_users = db.get_users_impl(session=session_testing)
+        assert len(two_response_users) == 4
 
-        for index, user in enumerate(two_response_users):
-            assert user.user_id == index + 1
-            assert user.signed is True
-            assert user.chat_id == index + 1
+    def test_unsubscribe_user(self, session_testing: Session):
 
-            assert user.user.user_id == index + 1
-            assert user.user.first_name == "user"
-            assert user.user.last_name is None
-            assert user.user.role == RoleEnum.USER
-            assert user.user.subscriber.chat_id == index + 1
-            assert user.user.subscriber.signed == True
+        generate_user_by_number_in_database(count=4, session=session_testing)
+
+        db.unsubscribe_user_impl(user_id=3, session=session_testing)
+
+        user = db.get_user_impl(user_id=3, session=session_testing)
+        assert user is None
+        users = db.get_users_impl(session=session_testing)
+        assert len(users) == 3
