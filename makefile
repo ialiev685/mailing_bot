@@ -4,4 +4,4 @@ migrate:
 
 
 test:
-	python -m pytest tests/test_example.py
+	python -m pytest tests/test_user.py

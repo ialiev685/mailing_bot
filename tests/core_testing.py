@@ -1,4 +1,7 @@
+from sqlalchemy.orm import Session
+
 import pytest
+
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -16,19 +19,26 @@ DB_HOST = os.getenv("POSTGRES_HOST")
 DB_PORT = os.getenv("POSTGRES_PORT")
 DB_NAME_TESTING = os.getenv("POSTGRES_DB_TESTING")
 
-DATABASE_URL = DATABASE_URL = (
+DATABASE_URL = (
     f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME_TESTING}"
 )
 
 
-engine_testing = create_engine(DATABASE_URL)
+@pytest.fixture
+def engine_testing():
+    engine = create_engine(DATABASE_URL)
+
+    BaseModel.metadata.drop_all(engine)
+    BaseModel.metadata.create_all(engine)
+
+    try:
+        yield engine
+    finally:
+        BaseModel.metadata.drop_all(engine)
+        pass
 
 
 @pytest.fixture
-def session_testing():
-    BaseModel.metadata.create_all(engine_testing)
+def session_testing(engine_testing):
     with Session(engine_testing) as session:
-        try:
-            yield session
-        finally:
-            BaseModel.metadata.drop_all(engine_testing)
+        yield session
