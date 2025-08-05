@@ -33,4 +33,4 @@ MailingContentType = Union[
 
 class RoleEnum(Enum):
     ADMIN = "ADMIN"
-    USER = "ADMIN"
+    USER = "USER"
