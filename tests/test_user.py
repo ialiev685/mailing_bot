@@ -5,8 +5,6 @@ from object_types import RoleEnum
 
 from tests.core_testing import *
 
-from sqlalchemy.orm import Session
-
 
 def generate_user_by_number_in_database(count: int, session: Session):
     for index in range(0, count):
