@@ -101,6 +101,7 @@ def send_message_about_mailing_error(chat_id: int):
 @bot.message_handler(commands=[CommandNames.start.value])
 @handler_error_decorator
 def subscribe(message: types.Message):
+    print(message)
     user = message.from_user
     user_subscriber = db.get_user(user.id)
     is_admin_user = is_admin(message.from_user.id)
@@ -158,7 +159,7 @@ def start_mailing(message: types.Message):
 @handler_error_decorator
 def get_text_mailing(message: types.Message):
     try:
-        # Плокируем поток - останавливаем выполнение паралельных функций
+        # Блокируем поток - останавливаем выполнение паралельных функций
         # При отправке нескольких файлов, хэндер срабатывает по количеству файлов.
         # Вызывы срабатывают паральено в разных потоках, из-чего обращаются к БД одновременно по одинаковому id.
         # В данном случае удалению по одинакову id вызвает ошибку т к одна из-за вызванных функций произвела удаление.

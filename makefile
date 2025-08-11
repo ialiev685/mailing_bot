@@ -4,4 +4,5 @@ migrate:
 
 
 test:
-	pytest
+# -s чтобы срабатывал логи print 	
+	pytest -s

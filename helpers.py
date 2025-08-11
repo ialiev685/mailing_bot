@@ -66,6 +66,7 @@ def get_formatted_content(
     MailingContentType,
     None,
 ]:
+
     if message.content_type == "text":
         return MailingTextContentTypeModel(content_type="text", text=message.text)
     if message.content_type == "photo":
