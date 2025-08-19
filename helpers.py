@@ -125,8 +125,9 @@ def create_media_group(
 
     for content in content_list:
         if content.content_type == "video" or content.content_type == "photo":
-            caption = content.caption
-            break
+            if content.caption:
+                caption = content.caption
+                break
 
     for index, content in enumerate(content_list):
         if content.content_type == "video" or content.content_type == "photo":
