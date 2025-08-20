@@ -45,11 +45,6 @@ class AddLastMessageError(BaseError):
         return f"AddLastMessageError: {self.message}. Exception: {self.other_args}"
 
 
-class RemoveLastMessageError(BaseError):
-    def __str__(self):
-        return f"DeleteLastMessageError: {self.message}. Exception: {self.other_args}"
-
-
 class GetLastMessageError(BaseError):
     def __str__(self):
         return f"GetLastMessageError: {self.message}. Exception: {self.other_args}"
