@@ -1,10 +1,8 @@
 from sqlalchemy.orm import Session
 import database.controllers as db
 from telebot import types
-from tests.message_mock import *
 from tests.core_testing import *
 from helpers import get_formatted_content, create_media_group
-import database.controllers as db
 from tests.core_testing import *
 from tests.message_mock import Message
 from object_types import (
