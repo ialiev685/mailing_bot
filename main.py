@@ -8,12 +8,12 @@ from config import (
 from object_types import (
     RoleEnum,
 )
-from typing import Union
+
 from dotenv import load_dotenv
 from time import sleep
 from helpers import get_formatted_content, create_media_group
 from helpers import handler_error_decorator
-from error_handlers import RemoveLastMessageError
+
 import database.controllers as db
 from threading import Lock
 import os
@@ -44,64 +44,45 @@ def is_admin(value: int):
 
 
 def set_menu_for_admin(chat_id: int):
-
     bot.set_my_commands(ADMIN_COMMANDS)
     bot.set_chat_menu_button(chat_id=chat_id, menu_button=types.MenuButtonCommands())
 
 
 def set_menu_for_user(chat_id: int):
-
     bot.set_my_commands(USER_COMMANDS)
     bot.set_chat_menu_button(chat_id=chat_id, menu_button=types.MenuButtonCommands())
 
 
-def get_and_send_message_without_duplicates(
-    chat_id: int, send_text: str, reply_markup: types.InlineKeyboardMarkup = None
-) -> Union[types.Message, None]:
-
-    last_message = db.get_last_message(chat_id=chat_id)
-
-    try:
-
-        if (
-            last_message
-            and last_message.chat_id == chat_id
-            and last_message.text == send_text
-            and last_message.message_id
-        ):
-
-            bot.delete_message(
-                chat_id=last_message.chat_id, message_id=last_message.message_id
-            )
-    except Exception as error:
-        raise RemoveLastMessageError("Ошибка при удалении последнего сообщения", error)
-
-    msg = bot.send_message(
-        chat_id=chat_id,
-        text=send_text,
-        parse_mode="Markdown",
-        reply_markup=reply_markup,
-    )
-
-    db.add_last_message(chat_id=chat_id, text=send_text, message_id=msg.message_id)
-
-    return msg
-
-
-def send_message_about_mailing_error(chat_id: int):
-
-    get_and_send_message_without_duplicates(
-        chat_id=chat_id,
-        send_text="⚠️ Произошла ошибка при обработке сообщения. Запустите рассылку заново.",
-    )
-
+def set_value_about_start_mailing(value: bool):
+    db.update_flag_start_mailing(value=value)
     db.remove_content()
 
 
+def send_message_about_mailing_error(*args, **kwargs):
+
+    message: types.Message | None = None
+
+    for arg in args:
+        if hasattr(arg, "message") and hasattr(arg.message, "chat"):
+            message = arg.message
+            break
+
+    if message:
+        bot.send_message(
+            chat_id=message.chat.id,
+            text="⚠️ Произошла ошибка при обработке сообщения. Запустите рассылку заново или обратитесь к администратору.",
+            parse_mode="Markdown",
+        )
+        db.update_flag_start_mailing(value=False)
+        db.remove_content()
+
+
 @bot.message_handler(commands=[CommandNames.start.value])
-@handler_error_decorator
-def subscribe(message: types.Message):
-    print(message)
+@handler_error_decorator(
+    callBack=send_message_about_mailing_error, func_name="handle_subscribe"
+)
+def handle_subscribe(message: types.Message):
+
     user = message.from_user
     user_subscriber = db.get_user(user.id)
     is_admin_user = is_admin(message.from_user.id)
@@ -120,18 +101,23 @@ def subscribe(message: types.Message):
 
         set_menu_for_admin(chat_id=message.chat.id)
 
+        db.init_flag_start_mailing()
+
     else:
         set_menu_for_user(chat_id=message.chat.id)
 
-    get_and_send_message_without_duplicates(
+    bot.send_message(
         chat_id=message.chat.id,
-        send_text=f"Привет 👋, {message.from_user.first_name} {message.from_user.last_name}",
+        text=f"Привет 👋, {message.from_user.first_name} {message.from_user.last_name}",
+        parse_mode="Markdown",
     )
 
 
 @bot.message_handler(commands=[CommandNames.stop.value])
-@handler_error_decorator
-def unsubscribe(message: types.Message):
+@handler_error_decorator(
+    callBack=send_message_about_mailing_error, func_name="handle_unsubscribe"
+)
+def handle_unsubscribe(message: types.Message):
 
     db.unsubscribe_user(message.from_user.id)
 
@@ -142,61 +128,99 @@ def unsubscribe(message: types.Message):
     )
 
 
-@bot.message_handler(commands=[CommandNames.start_mailing.value])
-@handler_error_decorator
+@handler_error_decorator(
+    callBack=send_message_about_mailing_error, func_name="start_mailing"
+)
 def start_mailing(message: types.Message):
-    db.remove_content()
 
-    msg = get_and_send_message_without_duplicates(
+    set_value_about_start_mailing(value=True)
+
+    bot.send_message(
         chat_id=message.chat.id,
-        send_text=f"✍️ Вставьте сообщение (фото или текст, можно несколько) для рассылки.\n\n*Выполните команду /{CommandNames.done.value} когда закончите вставку необходимого контента.*",
+        text=f"✍️ Вставьте сообщение (фото или текст, можно несколько) для рассылки.\n\n*Выполните команду /{CommandNames.done.value} когда закончите вставку необходимого контента.*",
+        parse_mode="Markdown",
     )
 
-    bot.register_next_step_handler(message=msg, callback=get_text_mailing)
 
+@bot.message_handler(
+    commands=[CommandNames.done.value, CommandNames.start_mailing.value]
+)
+@handler_error_decorator(
+    callBack=send_message_about_mailing_error,
+    func_name="handle_complete_upload_content",
+)
+def handle_control_start_mailing(message: types.Message):
 
-@bot.message_handler(content_types=["text", "photo", "video"])
-@handler_error_decorator
-def get_text_mailing(message: types.Message):
-    try:
-        # Блокируем поток - останавливаем выполнение паралельных функций
-        # При отправке нескольких файлов, хэндер срабатывает по количеству файлов.
-        # Вызывы срабатывают паральено в разных потоках, из-чего обращаются к БД одновременно по одинаковому id.
-        # В данном случае удалению по одинакову id вызвает ошибку т к одна из-за вызванных функций произвела удаление.
-        lock.acquire()
-        if message.text == f"/{CommandNames.done.value}":
-
-            if db.check_content() == False:
-                get_and_send_message_without_duplicates(
-                    chat_id=message.chat.id,
-                    send_text=f"❌ У вас нет сообщений для рассылки.",
-                )
-                return
-
-            confirm_mailing(message.chat.id)
-            return
-        if message.text == f"/{CommandNames.start_mailing.value}":
-            start_mailing(message=message)
+    if message.text == f"/{CommandNames.done.value}":
+        if db.check_content() == False:
+            bot.send_message(
+                chat_id=message.chat.id,
+                text=f"❌ У вас нет сообщений для рассылки.",
+                parse_mode="Markdown",
+            )
             return
 
-        content = get_formatted_content(message)
-
-        if content is not None:
-            db.add_mailing_content(content)
-
-        msg = get_and_send_message_without_duplicates(
-            chat_id=message.chat.id,
-            send_text=f"✅ Сообщение добавлено. *Отправьте еще или нажмите /{CommandNames.done.value} для завершения.*",
-        )
-
-        bot.register_next_step_handler(message=msg, callback=get_text_mailing)
-
-    finally:
-        # После завершения функции, отпускаем блокировку потока
-        lock.release()
+        confirm_mailing(message.chat.id)
+        return
+    if message.text == f"/{CommandNames.start_mailing.value}":
+        start_mailing(message=message)
 
 
-@handler_error_decorator
+@bot.message_handler(content_types=["text"])
+@handler_error_decorator(
+    callBack=send_message_about_mailing_error, func_name="handle_text_messages"
+)
+def handle_text_messages(message: types.Message):
+    # Пропускаем команды, которые уже обработаны другим хэндлером
+    if message.text in [
+        f"/{CommandNames.done.value}",
+        f"/{CommandNames.start_mailing.value}",
+    ]:
+        return
+
+    start_mailing_data = db.get_start_mailing_data()
+    if start_mailing_data.value is not True:
+        return
+
+    content = get_formatted_content(message)
+
+    if content is not None:
+        db.add_mailing_content(content)
+
+    bot.send_message(
+        chat_id=message.chat.id,
+        text=f"✅ Сообщение добавлено. *Отправьте еще или нажмите /{CommandNames.done.value} для завершения.*",
+        parse_mode="Markdown",
+    )
+
+
+@bot.message_handler(content_types=["photo", "video"])
+@handler_error_decorator(
+    callBack=send_message_about_mailing_error, func_name="handle_media_messages"
+)
+def handle_media_messages(message: types.Message):
+    start_mailing_data = db.get_start_mailing_data()
+    if start_mailing_data.value is not True:
+        return
+
+    content = get_formatted_content(message)
+
+    # Для медиа используем задержку перед ответом
+    sleep(0.3)
+
+    if content is not None:
+        db.add_mailing_content(content)
+
+    bot.send_message(
+        chat_id=message.chat.id,
+        text=f"✅ Сообщение добавлено. *Отправьте еще или нажмите /{CommandNames.done.value} для завершения.*",
+        parse_mode="Markdown",
+    )
+
+
+@handler_error_decorator(
+    callBack=send_message_about_mailing_error, func_name="confirm_mailing"
+)
 def confirm_mailing(chat_id: int):
     markup_object = types.InlineKeyboardMarkup()
     button_confirm = types.InlineKeyboardButton(
@@ -207,9 +231,10 @@ def confirm_mailing(chat_id: int):
     )
     markup_object.add(button_confirm, button_cancel)
 
-    get_and_send_message_without_duplicates(
+    bot.send_message(
         chat_id=chat_id,
-        send_text="🚀 Вы действительно хотите выполнить рассылку?",
+        text="🚀 Вы действительно хотите выполнить рассылку?",
+        parse_mode="Markdown",
         reply_markup=markup_object,
     )
 
@@ -217,7 +242,9 @@ def confirm_mailing(chat_id: int):
 @bot.callback_query_handler(
     func=lambda call: call.data in ["confirm_mailing", "cancel_mailing"]
 )
-@handler_error_decorator
+@handler_error_decorator(
+    callBack=send_message_about_mailing_error, func_name="handle_confirm_mailing"
+)
 def handle_confirm_mailing(call: types.CallbackQuery):
     bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
@@ -244,19 +271,17 @@ def handle_confirm_mailing(call: types.CallbackQuery):
                     )
 
                 sleep(0.3)
+
             for key, content in sorted_group_content.items():
-                if len(content) > 0 and content[0].content_type == "photo":
-                    media = create_media_group(content, types.InputMediaPhoto)
-                    bot.send_media_group(chat_id=uses.chat_id, media=media)
-                if len(content) > 0 and content[0].content_type == "video":
-                    media = create_media_group(content, types.InputMediaVideo)
+                if len(content) > 0:
+                    media = create_media_group(content_list=content)
                     bot.send_media_group(chat_id=uses.chat_id, media=media)
                 sleep(0.3)
 
-        db.remove_content()
+        set_value_about_start_mailing(value=False)
 
     if call.data == "cancel_mailing":
-        db.remove_content()
+        set_value_about_start_mailing(value=False)
         bot.send_message(chat_id=call.message.id, text="❌ Вы отменили рассылку.")
 
 
@@ -264,13 +289,18 @@ def init_logger_config():
     logging.basicConfig(
         filename="logs.log",
         level=logging.INFO,
-        format="%(asctime)s - %(filename)s - строка:%(lineno)s - %(levelname)s - %(message)s",
+        format="%(asctime)s - %(filename)s - row:%(lineno)s - %(levelname)s - %(message)s - callback name:%(func_name)s",
     )
 
 
 if __name__ == "__main__":
-    try:
-        init_logger_config()
-        bot.infinity_polling(restart_on_change=True)
-    except Exception as error:
-        print("error by start server:", error)
+    while True:
+        try:
+
+            init_logger_config()
+            # bot.infinity_polling(restart_on_change=True)
+            bot.infinity_polling()
+
+        except Exception as error:
+            sleep(10)
+            print("error by start server:", error)
