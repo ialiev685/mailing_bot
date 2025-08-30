@@ -40,16 +40,6 @@ class ParseSortError(BaseError):
         return f"ParseSortError: {self.message}. Exception: {self.other_args}"
 
 
-class AddLastMessageError(BaseError):
-    def __str__(self):
-        return f"AddLastMessageError: {self.message}. Exception: {self.other_args}"
-
-
-class GetLastMessageError(BaseError):
-    def __str__(self):
-        return f"GetLastMessageError: {self.message}. Exception: {self.other_args}"
-
-
 class CreateUserError(BaseError):
     def __str__(self):
         return f"CreateUserError: {self.message}. Exception: {self.other_args}"
@@ -68,3 +58,8 @@ class AddUserError(BaseError):
 class RemoveUserError(BaseError):
     def __str__(self):
         return f"RemoveUserError: {self.message}. Exception: {self.other_args}"
+
+
+class StartMailingError(BaseError):
+    def __str__(self):
+        return f"StartMailingError: {self.message}. Exception: {self.other_args}"

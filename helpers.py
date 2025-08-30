@@ -176,20 +176,18 @@ def handler_error_decorator(
         def wrapper(*args, **kwargs):
 
             error_classes = (
-                error_instance.AddLastMessageError,
                 error_instance.AddMailingContentError,
                 error_instance.AddUserError,
                 error_instance.CheckMailingContentError,
                 error_instance.CreateUserError,
-                error_instance.GetLastMessageError,
                 error_instance.GetUserError,
                 error_instance.GetMailingContentError,
                 error_instance.LoadJsonError,
                 error_instance.RemoveUserError,
-                error_instance.RemoveLastMessageError,
                 error_instance.RemoveMailingContentError,
                 error_instance.ParseSortError,
                 error_instance.UnknownContentType,
+                error_instance.StartMailingError,
             )
 
             try:
