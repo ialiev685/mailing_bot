@@ -1,5 +1,5 @@
 import json
-from typing import Union, Callable, Type
+from typing import Union, Callable, Type, Optional
 from telebot import types
 from error_handlers import LoadJsonError, UnknownContentType, ParseSortError
 from object_types import (
@@ -118,8 +118,8 @@ def parse_and_sort_content(str_content_list: list[MailingContentModel]):
 
 def create_media_group(
     content_list: list[MailingContentType],
-    input: Union[types.InputMediaPhoto, types.InputMediaVideo],
-):
+) -> list[Union[types.InputMediaPhoto, types.InputMediaVideo]]:
+
     media: list[Union[types.InputMediaPhoto, types.InputMediaVideo]] = []
     caption = None
 
@@ -130,9 +130,18 @@ def create_media_group(
                 break
 
     for index, content in enumerate(content_list):
-        if content.content_type == "video" or content.content_type == "photo":
+
+        if content.content_type == "photo":
             media.append(
-                input(
+                types.InputMediaPhoto(
+                    media=content.file_id,
+                    caption=caption if index == 0 else None,
+                    parse_mode="Markdown" if index == 0 else None,
+                )
+            )
+        elif content.content_type == "video":
+            media.append(
+                types.InputMediaVideo(
                     media=content.file_id,
                     caption=caption if index == 0 else None,
                     parse_mode="Markdown" if index == 0 else None,
@@ -159,31 +168,45 @@ def session_decorator(errorInstance: Type[Exception], errorMessage: str):
     return decorator
 
 
-def handler_error_decorator(callback: Callable):
-    def wrapper(*args, **kwargs):
+def handler_error_decorator(
+    callBack: Optional[Callable] = None,
+    func_name: str = "unknown",
+):
+    def decorator(callback: Callable):
+        def wrapper(*args, **kwargs):
 
-        error_classes = (
-            error_instance.AddLastMessageError,
-            error_instance.AddMailingContentError,
-            error_instance.AddUserError,
-            error_instance.CheckMailingContentError,
-            error_instance.CreateUserError,
-            error_instance.GetLastMessageError,
-            error_instance.GetUserError,
-            error_instance.GetMailingContentError,
-            error_instance.LoadJsonError,
-            error_instance.RemoveUserError,
-            error_instance.RemoveLastMessageError,
-            error_instance.RemoveMailingContentError,
-            error_instance.ParseSortError,
-            error_instance.UnknownContentType,
-        )
+            error_classes = (
+                error_instance.AddLastMessageError,
+                error_instance.AddMailingContentError,
+                error_instance.AddUserError,
+                error_instance.CheckMailingContentError,
+                error_instance.CreateUserError,
+                error_instance.GetLastMessageError,
+                error_instance.GetUserError,
+                error_instance.GetMailingContentError,
+                error_instance.LoadJsonError,
+                error_instance.RemoveUserError,
+                error_instance.RemoveLastMessageError,
+                error_instance.RemoveMailingContentError,
+                error_instance.ParseSortError,
+                error_instance.UnknownContentType,
+            )
 
-        try:
-            return callback(*args, **kwargs)
-        except error_classes as error:
-            logger.error(error)
-        except Exception as error:
-            logger.error(error)
+            try:
+                # logger.info(
+                #     "callback name: %s", func_name, extra={"func_name": func_name}
+                # )
+                return callback(*args, **kwargs)
+            except error_classes as error:
+                if callBack is not None:
+                    callBack(*args, **kwargs)
+                logger.error(error, extra={"func_name": func_name})
+            except Exception as error:
 
-    return wrapper
+                if callBack is not None:
+                    callBack(*args, **kwargs)
+                logger.error(error, extra={"func_name": func_name})
+
+        return wrapper
+
+    return decorator
