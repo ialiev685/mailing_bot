@@ -53,13 +53,7 @@ class MailingContentModel(BaseModel):
         return f"MailingContentModel: id{self.id}, content={self.content}"
 
 
-class LastMessage(BaseModel):
-    __tablename__ = "last_message"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    message_id: Mapped[int] = mapped_column(Integer(), default=None, nullable=True)
-    chat_id: Mapped[int] = mapped_column(Integer())
-    text: Mapped[str] = mapped_column(Text())
-
-    def __repr__(self):
-        return f"LastMessage: id{self.id}, message_id={self.message_id}, chat_id={self.chat_id} text={self.text}"
+class StartMailing(BaseModel):
+    __tablename__ = "start_mailing"
+    name: Mapped[str] = mapped_column(primary_key=True)
+    value: Mapped[bool] = mapped_column(default=False)

@@ -1,3 +1,3 @@
 from database.controllers.user import *
 from database.controllers.mailing_content import *
-from database.controllers.last_message import *
+from database.controllers.start_mailing import *
