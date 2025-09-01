@@ -89,36 +89,42 @@ def get_formatted_content(
 
 
 def parse_and_sort_content(str_content_list: list[MailingContentModel]):
-    sorted_single_content: list[MailingContentType] = []
-    sorted_group_content: dict[str, list[MailingContentType]] = defaultdict(list)
+
+    sorted_group_content: dict[
+        str, Union[MailingContentType, list[MailingContentType]]
+    ] = {}
 
     try:
 
-        for item in str_content_list:
+        for index, item in enumerate(str_content_list):
 
             parsed_content = load_json_safe(item.content)
             content_type = parsed_content.content_type
             media_group_id = parsed_content.media_group_id
 
             if content_type == "text":
-                sorted_single_content.append(parsed_content)
-            if (
+                sorted_group_content[str(index)] = parsed_content
+            elif (
                 content_type == "photo" or content_type == "video"
             ) and parsed_content.media_group_id is None:
-                sorted_single_content.append(parsed_content)
-            if (
+                sorted_group_content[str(index)] = parsed_content
+            elif (
                 content_type == "photo" or content_type == "video"
             ) and media_group_id is not None:
-                sorted_group_content[media_group_id].append(parsed_content)
 
-        return (sorted_single_content, sorted_group_content)
+                if media_group_id in sorted_group_content:
+                    existing_value = sorted_group_content[media_group_id]
+                    if isinstance(existing_value, list):
+                        existing_value.append(parsed_content)
+                else:
+                    sorted_group_content[media_group_id] = [parsed_content]
+
+        return sorted_group_content
     except Exception as error:
         raise ParseSortError("Ошибка при сортировки контента: ", error)
 
 
-def create_media_group(
-    content_list: list[MailingContentType],
-) -> list[Union[types.InputMediaPhoto, types.InputMediaVideo]]:
+def create_media_group(content_list: list[MailingContentType]):
 
     media: list[Union[types.InputMediaPhoto, types.InputMediaVideo]] = []
     caption = None

@@ -7,13 +7,17 @@ from config import (
 )
 from object_types import (
     RoleEnum,
+    MailingContentType,
+    MailingTextContentTypeModel,
+    MailingPhotoContentTypeModel,
+    MailingVideoContentTypeModel,
 )
-
+from collections import defaultdict
 from dotenv import load_dotenv
 from time import sleep
 from helpers import get_formatted_content, create_media_group
 from helpers import handler_error_decorator
-
+from database.models import SubscriberModel
 import database.controllers as db
 from threading import Lock
 import os
@@ -264,32 +268,34 @@ def handle_confirm_mailing(call: types.CallbackQuery):
 
     if call.data == "confirm_mailing":
 
-        users = db.get_users()
+        users: list[SubscriberModel] = db.get_users()
 
-        sorted_single_content, sorted_group_content = db.get_mailing_content()
+        sorted_group_content: defaultdict[str, list[MailingContentType]] = (
+            db.get_mailing_content()
+        )
 
-        for uses in users:
-            for content in sorted_single_content:
-                if content.content_type == "text":
+        for user in users:
+
+            for key, content in sorted_group_content.items():
+                if len(content) < 1:
+                    continue
+                if isinstance(content, MailingTextContentTypeModel):
                     bot.send_message(
-                        chat_id=uses.chat_id,
+                        chat_id=user.chat_id,
                         text=content.text,
                         parse_mode="Markdown",
                     )
-                if content.content_type == "photo":
+                elif isinstance(content, MailingPhotoContentTypeModel):
                     bot.send_photo(
-                        chat_id=uses.chat_id,
+                        chat_id=user.chat_id,
                         caption=content.caption,
                         photo=content.file_id,
                         parse_mode="Markdown",
                     )
 
-                sleep(0.3)
-
-            for key, content in sorted_group_content.items():
-                if len(content) > 0:
+                elif isinstance(content, list):
                     media = create_media_group(content_list=content)
-                    bot.send_media_group(chat_id=uses.chat_id, media=media)
+                    bot.send_media_group(chat_id=user.chat_id, media=media)
                 sleep(0.3)
 
         set_value_about_start_mailing(value=False)
