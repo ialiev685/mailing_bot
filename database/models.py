@@ -1,5 +1,5 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import String, ForeignKey, JSON, Enum as SqlAcademyEnum, Integer, Text
+from sqlalchemy import String, ForeignKey, JSON, Enum as SqlAcademyEnum, BigInteger
 from typing import Optional, Union
 from enum import Enum
 from typing import Any
@@ -14,8 +14,8 @@ class BaseModel(DeclarativeBase):
 class UserModel(BaseModel):
     __tablename__ = "user"
 
-    user_id: Mapped[int] = mapped_column(primary_key=True)
-    first_name: Mapped[str] = mapped_column(String())
+    user_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    first_name: Mapped[str] = mapped_column(String)
     last_name: Mapped[Optional[str]]
     subscriber: Mapped["SubscriberModel"] = relationship(
         back_populates="user", cascade="all, delete-orphan"
@@ -32,8 +32,10 @@ class SubscriberModel(BaseModel):
     __tablename__ = "subscriber"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id = mapped_column(ForeignKey("user.user_id"), unique=True)
-    chat_id: Mapped[int] = mapped_column(unique=True)
+    user_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("user.user_id"), unique=True
+    )
+    chat_id: Mapped[int] = mapped_column(BigInteger, unique=True)
     signed: Mapped[bool] = mapped_column(default=False)
     user: Mapped["UserModel"] = relationship(
         back_populates="subscriber", passive_deletes=True
