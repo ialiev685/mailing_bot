@@ -63,3 +63,8 @@ class RemoveUserError(BaseError):
 class StartMailingError(BaseError):
     def __str__(self):
         return f"StartMailingError: {self.message}. Exception: {self.other_args}"
+
+
+class GetCountUsers(BaseError):
+    def __str__(self):
+        return f"GetCountUsers: {self.message}. Exception: {self.other_args}"

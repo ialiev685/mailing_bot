@@ -22,7 +22,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-lock = Lock()
 
 load_dotenv(".env")
 
@@ -58,8 +57,7 @@ def set_value_about_start_mailing(value: bool):
     db.remove_content()
 
 
-def send_message_about_mailing_error(*args, **kwargs):
-
+def send_message_about_mailing_error(*args):
     message: types.Message | None = None
 
     for arg in args:
@@ -108,7 +106,7 @@ def handle_subscribe(message: types.Message):
 
     bot.send_message(
         chat_id=message.chat.id,
-        text=f"Привет 👋, {message.from_user.first_name} {message.from_user.last_name}",
+        text=f"Привет 👋, {message.from_user.first_name} {message.from_user.last_name if message.from_user.last_name else '' }",
         parse_mode="Markdown",
     )
 
@@ -142,12 +140,27 @@ def start_mailing(message: types.Message):
     )
 
 
+@bot.message_handler(commands=[CommandNames.number_subscribers.value])
+@handler_error_decorator(
+    callBack=send_message_about_mailing_error,
+    func_name="handle_number_subscribers",
+)
+def handle_number_subscribers(message: types.Message):
+
+    count = db.get_count_users()
+    bot.send_message(
+        chat_id=message.chat.id,
+        text=f"Количество подписчиков - *{count}*",
+        parse_mode="Markdown",
+    )
+
+
 @bot.message_handler(
     commands=[CommandNames.done.value, CommandNames.start_mailing.value]
 )
 @handler_error_decorator(
     callBack=send_message_about_mailing_error,
-    func_name="handle_complete_upload_content",
+    func_name="handle_control_start_mailing",
 )
 def handle_control_start_mailing(message: types.Message):
 
@@ -175,6 +188,7 @@ def handle_text_messages(message: types.Message):
     if message.text in [
         f"/{CommandNames.done.value}",
         f"/{CommandNames.start_mailing.value}",
+        f"/{CommandNames.number_subscribers.value}",
     ]:
         return
 
