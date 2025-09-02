@@ -1,18 +1,11 @@
-from ..models import UserModel, SubscriberModel, RoleEnum
+from config import FORMATTED_ADMIN_IDS
+from database.models import UserModel, SubscriberModel, RoleEnum
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from typing import Optional, Union
 from object_types import RoleEnum
 from helpers import session_decorator
 from error_handlers import CreateUserError, GetUserError, RemoveUserError, GetCountUsers
-from dotenv import load_dotenv
-
-import os
-
-load_dotenv(".env")
-
-ADMIN_ID = os.getenv("ADMIN_ID", None)
-FORMATTED_ADMIN_IDS = ADMIN_ID.split(",") if ADMIN_ID else []
 
 
 @session_decorator(CreateUserError, "Ошибка при создании юзера в БД: ")

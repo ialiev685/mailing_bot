@@ -1,5 +1,13 @@
 from telebot import types
 from enum import Enum
+from dotenv import load_dotenv
+
+import os
+
+load_dotenv(".env")
+
+ADMIN_ID = os.getenv("ADMIN_ID", None)
+FORMATTED_ADMIN_IDS = ADMIN_ID.split(",") if ADMIN_ID else []
 
 
 class CommandNames(Enum):

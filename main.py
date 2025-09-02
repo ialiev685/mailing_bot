@@ -1,12 +1,17 @@
 import telebot
 from telebot import types
-from config import ADMIN_COMMANDS, USER_COMMANDS, CommandNames, BOT_COMMANDS
+from config import (
+    ADMIN_COMMANDS,
+    FORMATTED_ADMIN_IDS,
+    USER_COMMANDS,
+    CommandNames,
+    BOT_COMMANDS,
+)
 from object_types import (
     RoleEnum,
     MailingContentType,
     MailingTextContentTypeModel,
     MailingPhotoContentTypeModel,
-    MailingVideoContentTypeModel,
 )
 from collections import defaultdict
 from dotenv import load_dotenv
@@ -19,18 +24,12 @@ from threading import Lock
 import os
 import logging
 
-
 logger = logging.getLogger(__name__)
-
 
 load_dotenv(".env")
 
-
 API_TOKEN = os.getenv("BOT_TOKEN", None)
-ADMIN_ID = os.getenv("ADMIN_ID", None)
 APP_PORT = os.getenv("APP_PORT", None)
-
-FORMATTED_ADMIN_IDS = ADMIN_ID.split(",") if ADMIN_ID else []
 
 
 bot = telebot.TeleBot(API_TOKEN)
