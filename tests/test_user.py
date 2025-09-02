@@ -71,3 +71,11 @@ class TestUser:
         assert user is None
         users = db.get_users_impl(session=session_testing)
         assert len(users) == 3
+
+    def test_count_subscribed_users(self, session_testing: Session):
+        generate_user_by_number_in_database(count=4, session=session_testing)
+        count = db.get_count_users_impl(session=session_testing)
+        assert count == 4
+        db.unsubscribe_user_impl(user_id=2027691759, session=session_testing)
+        count = db.get_count_users_impl(session=session_testing)
+        assert count == 3
