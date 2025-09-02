@@ -1,10 +1,6 @@
 import telebot
 from telebot import types
-from config import (
-    ADMIN_COMMANDS,
-    USER_COMMANDS,
-    CommandNames,
-)
+from config import ADMIN_COMMANDS, USER_COMMANDS, CommandNames, BOT_COMMANDS
 from object_types import (
     RoleEnum,
     MailingContentType,
@@ -189,11 +185,7 @@ def handle_control_start_mailing(message: types.Message):
 )
 def handle_text_messages(message: types.Message):
     # Пропускаем команды, которые уже обработаны другим хэндлером
-    if message.text in [
-        f"/{CommandNames.done.value}",
-        f"/{CommandNames.start_mailing.value}",
-        f"/{CommandNames.number_subscribers.value}",
-    ]:
+    if message.text in BOT_COMMANDS:
         return
 
     start_mailing_data = db.get_start_mailing_data()
@@ -241,6 +233,9 @@ def handle_media_messages(message: types.Message):
 )
 def confirm_mailing(chat_id: int):
     markup_object = types.InlineKeyboardMarkup()
+    button_preview = types.InlineKeyboardButton(
+        text="👀 Предосмотр", callback_data="preview"
+    )
     button_confirm = types.InlineKeyboardButton(
         text="✅ Отправить", callback_data="confirm_mailing"
     )
@@ -248,6 +243,7 @@ def confirm_mailing(chat_id: int):
         text="❌ Отмена", callback_data="cancel_mailing"
     )
     markup_object.add(button_confirm, button_cancel)
+    markup_object.add(button_preview)
 
     bot.send_message(
         chat_id=chat_id,
