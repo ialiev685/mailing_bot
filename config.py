@@ -4,6 +4,7 @@ from enum import Enum
 
 class CommandNames(Enum):
     start = "start"
+    preview = "preview"
     start_mailing = "start_mailing"
     number_subscribers = "number_subscribers"
     about = "about"
@@ -11,9 +12,13 @@ class CommandNames(Enum):
     done = "done"
 
 
+BOT_COMMANDS = {f"/{cmd.value}" for cmd in CommandNames}
+
+
 ADMIN_COMMANDS = [
     # types.BotCommand(CommandNames.start.value, "Запуск бота"),
     types.BotCommand(CommandNames.start_mailing.value, "Начать рассылку"),
+    types.BotCommand(CommandNames.start_mailing.preview, "Предосмотр рассылки"),
     types.BotCommand(CommandNames.number_subscribers.value, "Число подписчиков"),
     types.BotCommand(CommandNames.stop.value, "Отписаться"),
 ]
