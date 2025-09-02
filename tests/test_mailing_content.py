@@ -5,12 +5,7 @@ from tests.core_testing import *
 from helpers import get_formatted_content, create_media_group
 from tests.core_testing import *
 from tests.message_mock import Message
-from object_types import (
-    MailingPhotoContentTypeModel,
-    MailingTextContentTypeModel,
-    MailingVideoContentTypeModel,
-    MailingContentType,
-)
+from object_types import MailingPhotoContentTypeModel, MailingTextContentTypeModel
 
 from typing import TypedDict, Literal, Optional
 
@@ -67,18 +62,15 @@ class TestMailingContent:
 
         add_content(test_list=test_list, session=session_testing)
 
-        sorted_single_content, sorted_group_content = db.get_mailing_content_impl(
-            session=session_testing
-        )
+        sorted_group_content = db.get_mailing_content_impl(session=session_testing)
 
-        assert len(sorted_single_content) == 4
-        assert len(sorted_group_content) == 0
+        assert len(sorted_group_content) == 4
 
-        for index, message in enumerate(sorted_single_content):
+        for key, message in sorted_group_content.items():
             if isinstance(message, MailingTextContentTypeModel):
                 assert (
                     message.text == "test description 1"
-                    if index == 0
+                    if key == "0"
                     else message.text == "test description 2"
                 )
                 assert message.media_group_id is None
@@ -86,11 +78,11 @@ class TestMailingContent:
             elif isinstance(message, MailingPhotoContentTypeModel):
                 assert message.media_group_id is None
                 assert (
-                    message.file_id == "03" if index == 1 else message.file_id == "01"
+                    message.file_id == "03" if key == "1" else message.file_id == "01"
                 )
                 assert (
                     message.caption == "test photo"
-                    if index == 3
+                    if key == "3"
                     else message.caption is None
                 )
                 assert message.content_type == "photo"
@@ -136,58 +128,45 @@ class TestMailingContent:
 
         add_content(test_list=test_list, session=session_testing)
 
-        sorted_single_content, sorted_group_content = db.get_mailing_content_impl(
-            session=session_testing
-        )
+        sorted_group_content = db.get_mailing_content_impl(session=session_testing)
 
-        assert len(sorted_single_content) == 2
-        assert len(sorted_group_content) == 2
+        assert len(sorted_group_content) == 4
 
-        for index, message in enumerate(sorted_single_content):
-            if isinstance(message, MailingTextContentTypeModel):
-                assert message.content_type == "text"
-                assert message.text == f"test description {index+1}"
-                assert message.media_group_id is None
+        for index, item in enumerate(sorted_group_content.items()):
+            key, content = item
+            if index == 0:
+                assert content.content_type == "text"
+                assert content.text == f"test description 1"
+                assert content.media_group_id is None
+
+            elif index == 1:
+                assert len(content) == 2
+                assert key == "14035329655475426"
+                assert isinstance(content, list)
+                assert content[0].content_type == "photo"
+                assert content[1].content_type == "photo"
+                media = create_media_group(content_list=content)
+                assert media[0].caption == "test photo"
+                assert media[0].media == "03"
+                assert media[1].caption is None
+                assert media[1].media == "02"
+
+            elif index == 2:
+                assert content.content_type == "text"
+                assert content.text == f"test description 2"
+                assert content.media_group_id is None
+
+            elif index == 3:
+                assert len(content) == 2
+                assert key == "14035329655475427"
+                assert isinstance(content, list)
+                assert content[0].content_type == "video"
+                assert content[1].content_type == "video"
+                media = create_media_group(content_list=content)
+                assert media[0].caption == "test video"
+                assert media[0].media == "001"
+                assert media[1].caption is None
+                assert media[1].media == "002"
 
             else:
                 raise ValueError("тесты не прошли")
-
-        for key, contents in sorted_group_content.items():
-
-            media = create_media_group(
-                content_list=contents, input=types.InputMediaPhoto
-            )
-            if key == "14035329655475426":
-                assert media[0].caption == "test photo"
-            elif key == "14035329655475427":
-                assert media[0].caption == "test video"
-
-            assert len(contents) == 2
-
-            for index, message in enumerate(contents):
-                if isinstance(message, MailingPhotoContentTypeModel):
-                    assert (
-                        message.caption == "test photo"
-                        if index == 1
-                        else message.caption is None
-                    )
-                    assert message.media_group_id == "14035329655475426"
-                    assert message.content_type == "photo"
-                    assert (
-                        message.file_id == "03"
-                        if index == 0
-                        else message.file_id == "02"
-                    )
-
-                elif isinstance(message, MailingVideoContentTypeModel):
-                    assert (
-                        message.caption == "test video"
-                        if index == 0
-                        else message.caption is None
-                    )
-                    assert message.media_group_id == "14035329655475427"
-                    assert message.content_type == "video"
-                    assert message.file_id == f"00{index+1}"
-
-                else:
-                    raise ValueError("тесты не прошли")
