@@ -30,6 +30,8 @@ MailingContentType = Union[
     MailingTextContentTypeModel,
 ]
 
+MailingContentGroupDict = dict[str, Union[MailingContentType, list[MailingContentType]]]
+
 
 class RoleEnum(Enum):
     ADMIN = "ADMIN"

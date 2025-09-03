@@ -1,3 +1,4 @@
+from typing import Union
 import telebot
 from telebot import types
 from config import (
@@ -12,8 +13,9 @@ from object_types import (
     MailingContentType,
     MailingTextContentTypeModel,
     MailingPhotoContentTypeModel,
+    MailingContentGroupDict,
 )
-from collections import defaultdict
+
 from dotenv import load_dotenv
 from time import sleep
 from helpers import get_formatted_content, create_media_group
@@ -94,10 +96,8 @@ def handle_subscribe(message: types.Message):
             role=role,
         )
 
-    if is_admin(message.from_user.id):
-
+    if is_admin_user:
         set_menu_for_admin(chat_id=message.chat.id)
-
         db.init_flag_start_mailing()
 
     else:
@@ -105,7 +105,7 @@ def handle_subscribe(message: types.Message):
 
     bot.send_message(
         chat_id=message.chat.id,
-        text=f"Привет 👋, {message.from_user.first_name} {message.from_user.last_name if message.from_user.last_name else '' }",
+        text=f"Привет 👋, {message.from_user.first_name}",
         parse_mode="Markdown",
     )
 
@@ -172,7 +172,7 @@ def handle_control_start_mailing(message: types.Message):
             )
             return
 
-        confirm_mailing(message.chat.id)
+        confirm_mailing(chat_id=message.chat.id)
         return
     if message.text == f"/{CommandNames.start_mailing.value}":
         start_mailing(message=message)
@@ -233,7 +233,7 @@ def handle_media_messages(message: types.Message):
 def confirm_mailing(chat_id: int):
     markup_object = types.InlineKeyboardMarkup()
     button_preview = types.InlineKeyboardButton(
-        text="👀 Предосмотр", callback_data="preview"
+        text="👀 Предосмотр", callback_data="preview_content"
     )
     button_confirm = types.InlineKeyboardButton(
         text="✅ Отправить", callback_data="confirm_mailing"
@@ -252,8 +252,34 @@ def confirm_mailing(chat_id: int):
     )
 
 
+def send_content_to_chat_by_id(
+    content_group: dict[str, Union[MailingContentType, list[MailingContentType]]],
+    chat_id: int,
+):
+    for key, content in content_group.items():
+        if isinstance(content, MailingTextContentTypeModel):
+            bot.send_message(
+                chat_id=chat_id,
+                text=content.text,
+                parse_mode="Markdown",
+            )
+        elif isinstance(content, MailingPhotoContentTypeModel):
+            bot.send_photo(
+                chat_id=chat_id,
+                caption=content.caption,
+                photo=content.file_id,
+                parse_mode="Markdown",
+            )
+
+        elif isinstance(content, list):
+            media = create_media_group(content_list=content)
+            bot.send_media_group(chat_id=chat_id, media=media)
+        sleep(0.3)
+
+
 @bot.callback_query_handler(
-    func=lambda call: call.data in ["confirm_mailing", "cancel_mailing"]
+    func=lambda call: call.data
+    in ["confirm_mailing", "cancel_mailing", "preview_content"]
 )
 @handler_error_decorator(
     callBack=send_message_about_mailing_error, func_name="handle_confirm_mailing"
@@ -261,37 +287,27 @@ def confirm_mailing(chat_id: int):
 def handle_confirm_mailing(call: types.CallbackQuery):
     bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
-    if call.data == "confirm_mailing":
-
-        users: list[SubscriberModel] = db.get_users()
-
-        sorted_group_content: defaultdict[str, list[MailingContentType]] = (
-            db.get_mailing_content()
+    if call.data == "preview_content":
+        sorted_group_content_preview: MailingContentGroupDict = db.get_mailing_content()
+        send_content_to_chat_by_id(
+            content_group=sorted_group_content_preview, chat_id=call.message.chat.id
         )
+        bot.send_message(
+            chat_id=call.message.chat.id,
+            text=f"👆 *Это предосмотр контента перед рассылкой*",
+            parse_mode="Markdown",
+        )
+        confirm_mailing(chat_id=call.message.chat.id)
+        return
+
+    if call.data == "confirm_mailing":
+        users: list[SubscriberModel] = db.get_users()
+        sorted_group_content: MailingContentGroupDict = db.get_mailing_content()
 
         for user in users:
-
-            for key, content in sorted_group_content.items():
-                if len(content) < 1:
-                    continue
-                if isinstance(content, MailingTextContentTypeModel):
-                    bot.send_message(
-                        chat_id=user.chat_id,
-                        text=content.text,
-                        parse_mode="Markdown",
-                    )
-                elif isinstance(content, MailingPhotoContentTypeModel):
-                    bot.send_photo(
-                        chat_id=user.chat_id,
-                        caption=content.caption,
-                        photo=content.file_id,
-                        parse_mode="Markdown",
-                    )
-
-                elif isinstance(content, list):
-                    media = create_media_group(content_list=content)
-                    bot.send_media_group(chat_id=user.chat_id, media=media)
-                sleep(0.3)
+            send_content_to_chat_by_id(
+                content_group=sorted_group_content, chat_id=user.chat_id
+            )
 
         set_value_about_start_mailing(value=False)
 
