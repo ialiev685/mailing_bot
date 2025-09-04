@@ -162,12 +162,11 @@ def session_decorator(errorInstance: Type[Exception], errorMessage: str):
             try:
                 with Session(engine) as session:
                     return callback(*args, **kwargs, session=session)
-            except errorInstance as error:
-                session.rollback()
-                raise errorInstance(errorMessage, error)
             except Exception as error:
                 session.rollback()
-                raise Exception("Произошла неизвестная ошибка при работе с БД", error)
+                raise errorInstance(
+                    "Произошла неизвестная ошибка при работе с БД", error
+                )
 
         return wrapper
 
@@ -206,7 +205,6 @@ def handler_error_decorator(
                     callBack(*args, **kwargs)
                 logger.error(error, extra={"func_name": func_name})
             except Exception as error:
-
                 if callBack is not None:
                     callBack(*args, **kwargs)
                 logger.error(error, extra={"func_name": func_name})
