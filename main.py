@@ -103,10 +103,25 @@ def handle_subscribe(message: types.Message):
     else:
         set_menu_for_user(chat_id=message.chat.id)
 
+    markup_object = types.InlineKeyboardMarkup()
+    button_create_order = types.InlineKeyboardButton(
+        text="✈️ Подобрать тур", callback_data="create_order"
+    )
+    button_link_to_site = types.InlineKeyboardButton(
+        text="🏖️ Подобрать тур самостоятельно",
+        callback_data="link_to_site",
+        url="https://www.all-inc-travel-online.ru",
+    )
+    button_about = types.InlineKeyboardButton(text="💬 О нас", callback_data="about")
+    markup_object.add(button_create_order)
+    markup_object.add(button_link_to_site)
+    markup_object.add(button_about)
+
     bot.send_message(
         chat_id=message.chat.id,
-        text=f"Привет 👋, {message.from_user.first_name}",
+        text=f"Добрый день 👋, {message.from_user.first_name}. \n\nМеня завут Ирина. Я являюсь менеджером турагенства 'Ол Инклюзив' и помогу Вам организовать ваш лучший отдых. \n\n Выберите подходящий пукт меню чтобы подобрать тур",
         parse_mode="Markdown",
+        reply_markup=markup_object,
     )
 
 
