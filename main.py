@@ -2,6 +2,7 @@ import logging
 
 from bot_core import bot
 from handlers.mailing import *
+from handlers.order import *
 
 
 def init_logger_config():
@@ -17,8 +18,8 @@ if __name__ == "__main__":
         try:
 
             init_logger_config()
-            # bot.infinity_polling(restart_on_change=True)
-            bot.infinity_polling()
+            bot.infinity_polling(restart_on_change=True)
+            # bot.infinity_polling()
 
         except Exception as error:
             print("error by start server:", error)

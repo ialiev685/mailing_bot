@@ -1,5 +1,4 @@
 from typing import Union
-import telebot
 from telebot import types
 from config import (
     ADMIN_COMMANDS,
@@ -7,6 +6,7 @@ from config import (
     USER_COMMANDS,
     CommandNames,
     BOT_COMMANDS,
+    CallbackData,
 )
 from object_types import (
     RoleEnum,
@@ -16,23 +16,13 @@ from object_types import (
     MailingContentGroupDict,
 )
 
-from dotenv import load_dotenv
+
 from time import sleep
 from helpers import get_formatted_content, create_media_group
 from helpers import handler_error_decorator
 from database.models import SubscriberModel
 import database.controllers as db
-from threading import Lock
-import os
 from bot_core import bot
-
-load_dotenv(".env")
-
-API_TOKEN = os.getenv("BOT_TOKEN", None)
-APP_PORT = os.getenv("APP_PORT", None)
-
-
-bot = telebot.TeleBot(API_TOKEN)
 
 
 def is_admin(value: int):
@@ -103,14 +93,16 @@ def handle_subscribe(message: types.Message):
 
     markup_object = types.InlineKeyboardMarkup()
     button_create_order = types.InlineKeyboardButton(
-        text="✈️ Подобрать тур", callback_data="create_order"
+        text="✈️ Подобрать тур", callback_data=CallbackData.create_order.value
     )
     button_link_to_site = types.InlineKeyboardButton(
-        text="🏖️ Подобрать тур самостоятельно",
-        callback_data="link_to_site",
+        text="✍️ Отправить свое предложение",
+        callback_data=CallbackData.link_to_site.value,
         url="https://www.all-inc-travel-online.ru",
     )
-    button_about = types.InlineKeyboardButton(text="💬 О нас", callback_data="about")
+    button_about = types.InlineKeyboardButton(
+        text="💬 О нас", callback_data=CallbackData.about.value
+    )
     markup_object.add(button_create_order)
     markup_object.add(button_link_to_site)
     markup_object.add(button_about)
@@ -307,7 +299,7 @@ def handle_confirm_mailing(call: types.CallbackQuery):
         )
         bot.send_message(
             chat_id=call.message.chat.id,
-            text=f"👆 *Это предосмотр контента перед рассылкой*",
+            text=f"👆 *Это предосмотр контента перед рассылкой*\n",
             parse_mode="Markdown",
         )
         confirm_mailing(chat_id=call.message.chat.id)

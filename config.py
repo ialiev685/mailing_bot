@@ -36,4 +36,59 @@ USER_COMMANDS = [
 ]
 
 
-PATH_MAILING_DATA = "mailing_data/data.json"
+class CallbackData(Enum):
+    create_order = "create_order"
+    about = "about"
+    link_to_site = "link_to_site"
+
+
+COUNTRIES = [
+    "Турция",
+    "Египет",
+    "ОАЭ",
+    "Тайланд",
+    "Китай",
+    "Вьетнам",
+    "Шри-Ланка",
+    "Россия",
+    "Куба",
+    "Мальдивы",
+    "Cейшелы",
+    "❓ Свой вариант",
+]
+
+COUNT_DAYS = range(3, 14)
+
+
+def create_countries_button_menu() -> types.InlineKeyboardMarkup:
+    markup_object = types.InlineKeyboardMarkup()
+
+    row = []
+
+    for index, country in enumerate(COUNTRIES):
+        button_country = types.InlineKeyboardButton(
+            text=country, callback_data=f"country_{country}"
+        )
+        row.append(button_country)
+        if (index + 1) % 3 == 0:
+            markup_object.add(*row)
+            row = []
+
+    return markup_object
+
+
+def create_days_button_menu() -> types.InlineKeyboardMarkup:
+    markup_object = types.InlineKeyboardMarkup()
+
+    row = []
+
+    for number in COUNT_DAYS:
+        button_country = types.InlineKeyboardButton(
+            text=number, callback_data=f"day_{number}"
+        )
+        row.append(button_country)
+        if number % 3 == 0:
+            markup_object.add(*row)
+            row = []
+
+    return markup_object
