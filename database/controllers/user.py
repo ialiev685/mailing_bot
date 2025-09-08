@@ -5,7 +5,12 @@ from sqlalchemy import select
 from typing import Optional, Union
 from object_types import RoleEnum
 from helpers import session_decorator
-from error_handlers import CreateUserError, GetUserError, RemoveUserError, GetCountUsers
+from error_handlers import (
+    CreateUserError,
+    GetUserError,
+    RemoveUserError,
+    GetCountUsersError,
+)
 
 
 @session_decorator(CreateUserError, "Ошибка при создании юзера в БД: ")
@@ -90,7 +95,7 @@ def get_users_impl(session: Session) -> list[SubscriberModel]:
     return list(users)
 
 
-@session_decorator(GetCountUsers, "Ошибка при полчении числа подписчиков из БД: ")
+@session_decorator(GetCountUsersError, "Ошибка при полчении числа подписчиков из БД: ")
 def get_count_users(session: Session) -> int:
     return get_count_users_impl(session=session)
 

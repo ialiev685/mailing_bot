@@ -65,6 +65,11 @@ class StartMailingError(BaseError):
         return f"StartMailingError: {self.message}. Exception: {self.other_args}"
 
 
-class GetCountUsers(BaseError):
+class GetCountUsersError(BaseError):
     def __str__(self):
-        return f"GetCountUsers: {self.message}. Exception: {self.other_args}"
+        return f"GetCountUsersError: {self.message}. Exception: {self.other_args}"
+
+
+class CreateOrderError(BaseError):
+    def __str__(self):
+        return f"CreateOrderError: {self.message}. Exception: {self.other_args}"
