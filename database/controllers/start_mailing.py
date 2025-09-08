@@ -1,4 +1,4 @@
-from database.models import StartMailing
+from database.models import StartMailingModel
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from helpers import session_decorator
@@ -19,7 +19,7 @@ def init_flag_start_mailing(session: Session):
 def init_flag_start_mailing_impl(session: Session):
     mailing_content = get_start_mailing_data_impl(session=session)
     if mailing_content is None:
-        start_mailing = StartMailing(name=FLAG_NAME)
+        start_mailing = StartMailingModel(name=FLAG_NAME)
         session.add(start_mailing)
         session.commit()
 
@@ -32,7 +32,7 @@ def update_flag_start_mailing(value: bool, session: Session):
 
 
 def update_flag_start_mailing_impl(value: bool, session: Session):
-    response = select(StartMailing).where(StartMailing.name == FLAG_NAME)
+    response = select(StartMailingModel).where(StartMailingModel.name == FLAG_NAME)
     mailing_content = session.scalar(response)
 
     if mailing_content:
@@ -45,11 +45,11 @@ def update_flag_start_mailing_impl(value: bool, session: Session):
 @session_decorator(
     StartMailingError, "Ошибка при изменении флага в БД о начале рассылки: "
 )
-def get_start_mailing_data(session: Session) -> StartMailing | None:
+def get_start_mailing_data(session: Session) -> StartMailingModel | None:
     return get_start_mailing_data_impl(session=session)
 
 
-def get_start_mailing_data_impl(session: Session) -> StartMailing | None:
-    response = select(StartMailing).where(StartMailing.name == FLAG_NAME)
+def get_start_mailing_data_impl(session: Session) -> StartMailingModel | None:
+    response = select(StartMailingModel).where(StartMailingModel.name == FLAG_NAME)
     mailing_content = session.scalar(response)
     return mailing_content
