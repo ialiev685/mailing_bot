@@ -1,9 +1,13 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import String, ForeignKey, JSON, Enum as SqlAcademyEnum, BigInteger
-from typing import Optional, Union
-from enum import Enum
-from typing import Any
-
+from sqlalchemy import (
+    String,
+    ForeignKey,
+    JSON,
+    Enum as SqlAcademyEnum,
+    BigInteger,
+    Integer,
+)
+from typing import Optional
 from object_types import RoleEnum
 
 
@@ -55,7 +59,19 @@ class MailingContentModel(BaseModel):
         return f"MailingContentModel: id{self.id}, content={self.content}"
 
 
-class StartMailing(BaseModel):
+class StartMailingModel(BaseModel):
     __tablename__ = "start_mailing"
     name: Mapped[str] = mapped_column(primary_key=True)
     value: Mapped[bool] = mapped_column(default=False)
+
+
+class OrderModel(BaseModel):
+    __tablename__ = "create_order"
+    user_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    current_step: Mapped[int] = mapped_column(Integer, default=1)
+    to_country: Mapped[str] = mapped_column(String, nullable=True)
+    count_people: Mapped[int] = mapped_column(Integer, nullable=True)
+    count_days: Mapped[int] = mapped_column(Integer, nullable=True)
+    month: Mapped[str] = mapped_column(String, nullable=True)
+    price: Mapped[int] = mapped_column(BigInteger, nullable=True)
+    is_created_order: Mapped[bool] = mapped_column(default=False)
