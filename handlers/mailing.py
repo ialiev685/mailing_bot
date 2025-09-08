@@ -65,9 +65,7 @@ def send_message_about_mailing_error(*args):
 
 
 @bot.message_handler(commands=[CommandNames.start.value])
-@handler_error_decorator(
-    callBack=send_message_about_mailing_error, func_name="handle_subscribe"
-)
+@handler_error_decorator(func_name="handle_subscribe")
 def handle_subscribe(message: types.Message):
 
     user = message.from_user
@@ -116,9 +114,7 @@ def handle_subscribe(message: types.Message):
 
 
 @bot.message_handler(commands=[CommandNames.stop.value])
-@handler_error_decorator(
-    callBack=send_message_about_mailing_error, func_name="handle_unsubscribe"
-)
+@handler_error_decorator(func_name="handle_unsubscribe")
 def handle_unsubscribe(message: types.Message):
 
     db.unsubscribe_user(message.from_user.id)
@@ -145,10 +141,7 @@ def start_mailing(message: types.Message):
 
 
 @bot.message_handler(commands=[CommandNames.number_subscribers.value])
-@handler_error_decorator(
-    callBack=send_message_about_mailing_error,
-    func_name="handle_number_subscribers",
-)
+@handler_error_decorator(func_name="handle_number_subscribers")
 def handle_number_subscribers(message: types.Message):
 
     count = db.get_count_users()
