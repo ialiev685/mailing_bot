@@ -32,18 +32,18 @@ def create_order_impl(user_id: int, session: Session):
 
 @session_decorator(CreateOrderError, "Ошибка при обновлении подбора тура в БД: ")
 def update_order_data_by_step(
-    options: OrderFields, session: Session
+    session: Session, **kwargs: OrderFields
 ) -> Union[OrderModel, None]:
-    return update_order_data_by_step_impl(options, session=session)
+    return update_order_data_by_step_impl(session=session, **kwargs)
 
 
 def update_order_data_by_step_impl(
-    options: OrderFields, session: Session
+    session: Session, **kwargs: OrderFields
 ) -> Union[OrderModel, None]:
-    response = select(OrderModel).where(OrderModel.user_id == options["user_id"])
+    response = select(OrderModel).where(OrderModel.user_id == kwargs["user_id"])
     order = session.scalar(response)
     if order:
-        for key, value in options.items():
+        for key, value in kwargs.items():
             if value is not None:
                 setattr(order, key, value)
         session.commit()

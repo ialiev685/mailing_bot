@@ -54,37 +54,49 @@ COUNTRIES = [
     "Куба",
     "Мальдивы",
     "Cейшелы",
-    "❓ Свой вариант",
+    "Абхазия",
 ]
 
-COUNT_DAYS = range(3, 14)
+COUNT_DAYS = range(1, 14)
+
+PREFIX_COUNTRY = "country_"
+PREFIX_DAYS = "days_"
+PREFIX_CURRENT_STEP = "step_"
 
 
-def create_countries_button_menu() -> types.InlineKeyboardMarkup:
+def create_countries_button_menu(step: int) -> types.InlineKeyboardMarkup:
     markup_object = types.InlineKeyboardMarkup()
 
     row = []
 
     for index, country in enumerate(COUNTRIES):
         button_country = types.InlineKeyboardButton(
-            text=country, callback_data=f"country_{country}"
+            text=country,
+            callback_data=f"{PREFIX_COUNTRY}{country}-{PREFIX_CURRENT_STEP}{step}",
         )
         row.append(button_country)
         if (index + 1) % 3 == 0:
             markup_object.add(*row)
             row = []
+    markup_object.add(
+        types.InlineKeyboardButton(
+            text="Не определились❓",
+            callback_data=f"{PREFIX_COUNTRY}Не определились-{PREFIX_CURRENT_STEP}{step}",
+        )
+    )
 
     return markup_object
 
 
-def create_days_button_menu() -> types.InlineKeyboardMarkup:
+def create_days_button_menu(step: int) -> types.InlineKeyboardMarkup:
     markup_object = types.InlineKeyboardMarkup()
 
     row = []
 
     for number in COUNT_DAYS:
+        days = number + 2
         button_country = types.InlineKeyboardButton(
-            text=number, callback_data=f"day_{number}"
+            text=days, callback_data=f"day_{days}-{PREFIX_CURRENT_STEP}{step}"
         )
         row.append(button_country)
         if number % 3 == 0:
