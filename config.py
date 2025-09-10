@@ -96,7 +96,7 @@ def create_days_button_menu(step: int) -> types.InlineKeyboardMarkup:
     for number in COUNT_DAYS:
         days = number + 2
         button_country = types.InlineKeyboardButton(
-            text=days, callback_data=f"day_{days}-{PREFIX_CURRENT_STEP}{step}"
+            text=days, callback_data=f"{PREFIX_DAYS}{days}-{PREFIX_CURRENT_STEP}{step}"
         )
         row.append(button_country)
         if number % 3 == 0:

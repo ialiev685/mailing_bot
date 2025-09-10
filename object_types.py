@@ -36,3 +36,26 @@ MailingContentGroupDict = dict[str, Union[MailingContentType, list[MailingConten
 class RoleEnum(Enum):
     ADMIN = "ADMIN"
     USER = "USER"
+
+
+class OrderFieldsTypeModel(BaseModel):
+    user_id: int
+    current_step: int
+    to_country: Optional[str]
+    count_people: Optional[int]
+    count_days: Optional[int]
+    month: Optional[str]
+    price: Optional[int]
+    is_created_order: Optional[int]
+
+
+FieldName = Literal[
+    "user_id",
+    "current_step",
+    "to_country",
+    "count_people",
+    "count_days",
+    "month",
+    "price",
+    "is_created_order",
+]

@@ -11,8 +11,10 @@ from config import (
 from telebot import types
 import database.controllers as db
 from helpers import handler_error_decorator
-from typing import Any, Callable
+from typing import Any, Callable, Literal, TypedDict, Union
 import re
+from enum import Enum
+from object_types import FieldName
 
 
 def has_value_in_data_name(value: str) -> Callable:
@@ -25,54 +27,90 @@ def has_value_in_data_name(value: str) -> Callable:
     return callback
 
 
+class Step(Enum):
+    step_1 = 1
+    step_2 = 2
+    step_3 = 3
+    step_4 = 4
+    step_5 = 5
+
+
+class StepOptions(TypedDict):
+    get_menu: Callable[[int], None]
+    title: str
+
+
+step_options: dict[int, StepOptions] = {
+    Step.step_1.value: {
+        "title": "Выберите направление:",
+        "get_menu": create_countries_button_menu,
+    },
+    Step.step_2.value: {
+        "title": "Выберите количество дней:",
+        "get_menu": create_days_button_menu,
+    },
+}
+
+
+def get_step_number_from_button_data(data: str) -> int | None:
+    response_by_step = re.search(r"{}(\d+)$".format(PREFIX_CURRENT_STEP), data)
+    return int(response_by_step.group(1)) if response_by_step else None
+
+
+def get_order_value_from_button_data(data: str, prefix: str) -> str | None:
+    response_by_country = re.search(r"{}([^_]+)-".format(prefix), data)
+    return response_by_country.group(1) if response_by_country else None
+
+
 @bot.callback_query_handler(
     func=lambda call: call.data in [CallbackData.create_order.value]
 )
+@handler_error_decorator(func_name="create_order")
 def create_order(call: types.CallbackQuery):
     order = db.get_order_data_by_user_id(user_id=call.from_user.id)
     if order is None:
         db.create_order(user_id=call.from_user.id)
 
     if order:
-        button_menu = None
-
-        match order.current_step:
-            case 1:
-                button_menu = create_countries_button_menu(step=1)
-
-            case 2:
-                button_menu = create_days_button_menu(step=2)
+        options = step_options[order.current_step]
+        button_menu = options["get_menu"](order.current_step)
+        count_steps = len(Step)
 
         bot.send_message(
             chat_id=call.message.chat.id,
-            text=f"*Шаг {order.current_step} из 2*\n\n Выберите направление:",
+            text=f"*Шаг {order.current_step} из {count_steps}*\n\n {options['title']}",
             parse_mode="Markdown",
             reply_markup=button_menu,
         )
 
 
-@bot.callback_query_handler(func=has_value_in_data_name(PREFIX_COUNTRY))
-@handler_error_decorator(func_name="handle_confirm_mailing")
-def handle_choose_country(call: types.CallbackQuery):
-
+def handle_step(call: types.CallbackQuery, prefix: str, field_name: FieldName):
     if call.data:
-        response_by_step = re.search(r"{}(\d+)$".format(PREFIX_CURRENT_STEP), call.data)
-        current_step = int(response_by_step.group(1)) if response_by_step else None
-
+        current_step = get_step_number_from_button_data(call.data)
         order = db.get_order_data_by_user_id(user_id=call.from_user.id)
-        if order.current_step == current_step:
-            next_step = current_step + 1 if current_step else None
-            response_by_country = re.search(
-                r"{}([^_]+)-".format(PREFIX_COUNTRY), call.data
-            )
-            to_country = response_by_country.group(1) if response_by_country else None
-            db.update_order_data_by_step(
-                user_id=call.from_user.id, to_country=to_country, current_step=next_step
-            )
+
+        if current_step and order.current_step == current_step:
+            next_step = current_step + 1
+            value = get_order_value_from_button_data(data=call.data, prefix=prefix)
+
+            update_data: dict[FieldName, Union[str, int, None]] = {
+                field_name: value,
+                "current_step": next_step,
+            }
+
+            db.update_order_data_by_step(user_id=call.from_user.id, **update_data)
             create_order(call=call)
+        return None
+    return None
+
+
+@bot.callback_query_handler(func=has_value_in_data_name(PREFIX_COUNTRY))
+@handler_error_decorator(func_name="handle_choose_country")
+def handle_choose_country(call: types.CallbackQuery):
+    return handle_step(call=call, prefix=PREFIX_COUNTRY, field_name="to_country")
 
 
 @bot.callback_query_handler(func=has_value_in_data_name(PREFIX_DAYS))
-@handler_error_decorator(func_name="handle_confirm_mailing")
+@handler_error_decorator(func_name="handle_choose_days")
 def handle_choose_days(call: types.CallbackQuery):
-    pass
+    return handle_step(call=call, prefix=PREFIX_DAYS, field_name="count_days")
