@@ -34,15 +34,18 @@ def update_order_data_by_step_impl(
     if order:
         try:
 
-            OrderFieldsTypeModel.model_validate(kwargs)
+            fields = OrderFieldsTypeModel.model_validate(kwargs).model_dump(
+                exclude_none=True
+            )
 
-            for key, value in kwargs.items():
+            for key, value in fields.items():
                 if value is not None:
                     setattr(order, key, value)
             session.commit()
         except ValidationError as error:
             raise CreateOrderError(
-                "Ошибка при валидации данных во вреия обновления данных заказа в БД:"
+                "Ошибка при валидации данных во вреия обновления данных заказа в БД:",
+                error,
             )
 
     return order

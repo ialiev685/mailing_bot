@@ -93,15 +93,16 @@ def handle_step(call: types.CallbackQuery, prefix: str, field_name: FieldName):
             next_step = current_step + 1
             value = get_order_value_from_button_data(data=call.data, prefix=prefix)
 
+            if value is None:
+                return
+
             update_data: dict[FieldName, Union[str, int, None]] = {
-                field_name: value,
+                field_name: int(value) if value.isdigit() else value,
                 "current_step": next_step,
             }
 
             db.update_order_data_by_step(user_id=call.from_user.id, **update_data)
             create_order(call=call)
-        return None
-    return None
 
 
 @bot.callback_query_handler(func=has_value_in_data_name(PREFIX_COUNTRY))

@@ -41,12 +41,12 @@ class RoleEnum(Enum):
 class OrderFieldsTypeModel(BaseModel):
     user_id: int
     current_step: int
-    to_country: Optional[str]
-    count_people: Optional[int]
-    count_days: Optional[int]
-    month: Optional[str]
-    price: Optional[int]
-    is_created_order: Optional[int]
+    to_country: Optional[str] = None
+    count_people: Optional[int] = None
+    count_days: Optional[int] = None
+    month: Optional[str] = None
+    price: Optional[int] = None
+    is_created_order: Optional[int] = None
 
 
 FieldName = Literal[
