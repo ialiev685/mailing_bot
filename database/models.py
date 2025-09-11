@@ -73,5 +73,6 @@ class OrderModel(BaseModel):
     count_people: Mapped[int] = mapped_column(Integer, nullable=True)
     count_days: Mapped[int] = mapped_column(Integer, nullable=True)
     month: Mapped[str] = mapped_column(String, nullable=True)
-    price: Mapped[int] = mapped_column(BigInteger, nullable=True)
+    price: Mapped[str] = mapped_column(String, nullable=True)
+    connection: Mapped[str] = mapped_column(String, nullable=True)
     is_created_order: Mapped[bool] = mapped_column(default=False)

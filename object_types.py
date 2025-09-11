@@ -45,8 +45,9 @@ class OrderFieldsTypeModel(BaseModel):
     count_people: Optional[int] = None
     count_days: Optional[int] = None
     month: Optional[str] = None
-    price: Optional[int] = None
+    price: Optional[str] = None
     is_created_order: Optional[int] = None
+    connection: Optional[str] = None
 
 
 FieldName = Literal[
@@ -58,4 +59,5 @@ FieldName = Literal[
     "month",
     "price",
     "is_created_order",
+    "connection",
 ]
