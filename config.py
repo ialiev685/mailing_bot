@@ -1,7 +1,8 @@
 from telebot import types
 from enum import Enum
 from dotenv import load_dotenv
-
+from typing import Callable, TypedDict
+from enum import Enum
 import os
 
 load_dotenv(".env")
@@ -40,6 +41,15 @@ class CallbackData(Enum):
     create_order = "create_order"
     about = "about"
     link_to_site = "link_to_site"
+
+
+class Step(Enum):
+    step_1 = 1
+    step_2 = 2
+    step_3 = 3
+    step_4 = 4
+    step_5 = 5
+    step_6 = 6
 
 
 COUNTRIES = [
@@ -87,8 +97,8 @@ PRICES = [
     "более 300 000 ₽",
 ]
 
-COUNT_DAYS = range(1, 14)
-COUNT_PEOPLE = [1, 2, 3, 4, 0]
+COUNT_DAYS = [str(day) for day in range(3, 15)]
+COUNT_PEOPLE = ["1", "2", "3", "4", "Другой вариант"]
 
 PREFIX_CURRENT_STEP = "step_"
 PREFIX_COUNTRY = "country_"
@@ -99,105 +109,99 @@ PREFIX_PRICE = "price_"
 PREFIX_SOCIAL = "SOCIAL_"
 
 
-def create_countries_button_menu(step: int) -> types.InlineKeyboardMarkup:
+def factory_menu(
+    step: int, menu_names: list[str], prefix_name: str, count_column: int = 0
+) -> types.InlineKeyboardMarkup:
     markup_object = types.InlineKeyboardMarkup()
 
     row = []
 
-    for index, country in enumerate(COUNTRIES):
-        button_country = types.InlineKeyboardButton(
-            text=country,
-            callback_data=f"{PREFIX_COUNTRY}{country}-{PREFIX_CURRENT_STEP}{step}",
+    for index, name in enumerate(menu_names):
+        button = types.InlineKeyboardButton(
+            text=name,
+            callback_data=f"{prefix_name}{name}-{PREFIX_CURRENT_STEP}{step}",
         )
-        row.append(button_country)
-        if (index + 1) % 2 == 0:
+        if count_column == 0:
+            markup_object.add(button)
+            continue
+
+        row.append(button)
+
+        if (index + 1) % count_column == 0:
             markup_object.add(*row)
             row = []
-    if len(row) > 0:
+
+    if count_column > 0 and len(row) > 0:
         markup_object.add(*row)
 
     return markup_object
+
+
+def create_countries_button_menu(step: int) -> types.InlineKeyboardMarkup:
+    return factory_menu(
+        step=step, menu_names=COUNTRIES, prefix_name=PREFIX_COUNTRY, count_column=2
+    )
 
 
 def create_days_button_menu(step: int) -> types.InlineKeyboardMarkup:
-    markup_object = types.InlineKeyboardMarkup()
-
-    row = []
-
-    for number in COUNT_DAYS:
-        days = number + 2
-        button_days = types.InlineKeyboardButton(
-            text=days, callback_data=f"{PREFIX_DAYS}{days}-{PREFIX_CURRENT_STEP}{step}"
-        )
-        row.append(button_days)
-        if number % 3 == 0:
-            markup_object.add(*row)
-            row = []
-
-    return markup_object
+    return factory_menu(
+        step=step, menu_names=COUNT_DAYS, prefix_name=PREFIX_DAYS, count_column=3
+    )
 
 
 def create_count_people_button_menu(step: int) -> types.InlineKeyboardMarkup:
-    markup_object = types.InlineKeyboardMarkup()
-
-    row = []
-
-    for number in COUNT_PEOPLE:
-        button_count_people = types.InlineKeyboardButton(
-            text="Другой вариант" if number == 0 else number,
-            callback_data=f"{PREFIX_COUNT_PEOPLE}{number}-{PREFIX_CURRENT_STEP}{step}",
-        )
-        row.append(button_count_people)
-
-        if number % 2 == 0:
-            markup_object.add(*row)
-            row = []
-    if len(row) > 0:
-        markup_object.add(*row)
-
-    return markup_object
+    return factory_menu(
+        step=step,
+        menu_names=COUNT_PEOPLE,
+        prefix_name=PREFIX_COUNT_PEOPLE,
+        count_column=2,
+    )
 
 
 def create_month_button_menu(step: int) -> types.InlineKeyboardMarkup:
-    markup_object = types.InlineKeyboardMarkup()
-
-    row = []
-
-    for index, month in enumerate(MONTHS):
-        button_month = types.InlineKeyboardButton(
-            text=month,
-            callback_data=f"{PREFIX_MONTH}{month}-{PREFIX_CURRENT_STEP}{step}",
-        )
-        row.append(button_month)
-        if (index + 1) % 3 == 0:
-            markup_object.add(*row)
-            row = []
-    if len(row) > 0:
-        markup_object.add(*row)
-
-    return markup_object
+    return factory_menu(
+        step=step, menu_names=MONTHS, prefix_name=PREFIX_MONTH, count_column=3
+    )
 
 
 def create_price_button_menu(step: int) -> types.InlineKeyboardMarkup:
-    markup_object = types.InlineKeyboardMarkup()
-
-    for price in PRICES:
-        button_price = types.InlineKeyboardButton(
-            text=price,
-            callback_data=f"{PREFIX_PRICE}{price}-{PREFIX_CURRENT_STEP}{step}",
-        )
-        markup_object.add(button_price)
-
-    return markup_object
+    return factory_menu(step=step, menu_names=PRICES, prefix_name=PREFIX_PRICE)
 
 
 def create_social_network_button_menu(step: int) -> types.InlineKeyboardMarkup:
-    markup_object = types.InlineKeyboardMarkup()
-    for month in SOCIAL_NETWORKS:
-        button_social = types.InlineKeyboardButton(
-            text=month,
-            callback_data=f"{PREFIX_PRICE}{month}-{PREFIX_CURRENT_STEP}{step}",
-        )
-        markup_object.add(button_social)
+    return factory_menu(
+        step=step, menu_names=SOCIAL_NETWORKS, prefix_name=PREFIX_SOCIAL
+    )
 
-    return markup_object
+
+class StepOptions(TypedDict):
+    get_menu: Callable[[int], None]
+    title: str
+
+
+STEP_OPTIONS: dict[int, StepOptions] = {
+    Step.step_1.value: {
+        "title": "Выберите направление для отдыха:",
+        "get_menu": create_countries_button_menu,
+    },
+    Step.step_2.value: {
+        "title": "На сколько дней планируете Ваш отдых?",
+        "get_menu": create_days_button_menu,
+    },
+    Step.step_3.value: {
+        "title": "Сколько человек отправится?",
+        "get_menu": create_count_people_button_menu,
+    },
+    Step.step_4.value: {
+        "title": "Выберите месяц для отпуска:",
+        "get_menu": create_month_button_menu,
+    },
+    Step.step_5.value: {
+        "title": "Выберите примерные бюджет:",
+        "get_menu": create_price_button_menu,
+    },
+    Step.step_6.value: {
+        "title": "Выберите как с вами связаться:",
+        "get_menu": create_social_network_button_menu,
+    },
+}

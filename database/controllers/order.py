@@ -9,14 +9,16 @@ from pydantic import ValidationError
 
 
 @session_decorator(CreateOrderError, "Ошибка при создании подбора тура в БД: ")
-def create_order(user_id: int, session: Session) -> Union[OrderModel, None]:
+def create_order(user_id: int, session: Session) -> OrderModel:
     return create_order_impl(user_id=user_id, session=session)
 
 
-def create_order_impl(user_id: int, session: Session):
+def create_order_impl(user_id: int, session: Session) -> OrderModel:
     order = OrderModel(user_id=user_id)
     session.add(order)
     session.commit()
+    session.refresh(order)
+    return order
 
 
 @session_decorator(CreateOrderError, "Ошибка при обновлении подбора тура в БД: ")
@@ -66,3 +68,18 @@ def get_order_data_by_user_id_impl(
     response = select(OrderModel).where(OrderModel.user_id == user_id)
     order = session.scalar(response)
     return order
+
+
+@session_decorator(CreateOrderError, "Ошибка при удалении подбора тура из БД: ")
+def delete_order_data_by_user_id(
+    user_id: int, session: Session
+) -> Union[OrderModel, None]:
+    return delete_order_data_by_user_id_impl(user_id=user_id, session=session)
+
+
+def delete_order_data_by_user_id_impl(user_id: int, session: Session):
+    response = select(OrderModel).where(OrderModel.user_id == user_id)
+    order = session.scalar(response)
+    if order is not None:
+        session.delete(order)
+        session.commit()

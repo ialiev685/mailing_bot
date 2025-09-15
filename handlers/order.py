@@ -1,13 +1,6 @@
 from bot_core import bot
-
 from config import (
     CallbackData,
-    create_countries_button_menu,
-    create_days_button_menu,
-    create_count_people_button_menu,
-    create_month_button_menu,
-    create_price_button_menu,
-    create_social_network_button_menu,
     PREFIX_CURRENT_STEP,
     PREFIX_COUNTRY,
     PREFIX_DAYS,
@@ -15,13 +8,15 @@ from config import (
     PREFIX_MONTH,
     PREFIX_PRICE,
     PREFIX_SOCIAL,
+    Step,
+    STEP_OPTIONS,
 )
 from telebot import types
 import database.controllers as db
 from helpers import handler_error_decorator
 from typing import Any, Callable, TypedDict, Union
 import re
-from enum import Enum
+
 from object_types import FieldName
 
 
@@ -35,48 +30,6 @@ def has_value_in_data_name(value: str) -> Callable:
     return callback
 
 
-class Step(Enum):
-    step_1 = 1
-    step_2 = 2
-    step_3 = 3
-    step_4 = 4
-    step_5 = 5
-    step_6 = 6
-
-
-class StepOptions(TypedDict):
-    get_menu: Callable[[int], None]
-    title: str
-
-
-step_options: dict[int, StepOptions] = {
-    Step.step_1.value: {
-        "title": "Выберите направление для отдыха:",
-        "get_menu": create_countries_button_menu,
-    },
-    Step.step_2.value: {
-        "title": "На сколько дней планируете Ваш отдых?",
-        "get_menu": create_days_button_menu,
-    },
-    Step.step_3.value: {
-        "title": "Сколько человек отправится?",
-        "get_menu": create_count_people_button_menu,
-    },
-    Step.step_4.value: {
-        "title": "Выберите месяц для отпуска:",
-        "get_menu": create_month_button_menu,
-    },
-    Step.step_5.value: {
-        "title": "Выберите примерные бюджет:",
-        "get_menu": create_price_button_menu,
-    },
-    Step.step_6.value: {
-        "title": "Выберите как с вами связаться:",
-        "get_menu": create_social_network_button_menu,
-    },
-}
-
-
 def get_step_number_from_button_data(data: str) -> int | None:
     response_by_step = re.search(r"{}(\d+)$".format(PREFIX_CURRENT_STEP), data)
     return int(response_by_step.group(1)) if response_by_step else None
@@ -87,20 +40,55 @@ def get_order_value_from_button_data(data: str, prefix: str) -> str | None:
     return response_by_country.group(1) if response_by_country else None
 
 
+def handle_phone(message: types.Message):
+    if message.content_type == "text" and message.text:
+        is_valid_phone = re.match(
+            r"^(\+7|7|8)?[\s\-\(\)]*9\d{2}[\s\-\(\)]*\d{3}[\s\-\(\)]*\d{2}[\s\-\(\)]*\d{2}$",
+            message.text,
+        )
+        if is_valid_phone:
+            update_data: dict[FieldName, Union[str, int, None]] = {
+                "user_id": message.from_user.id,
+                "current_step": len(Step),
+                "is_created_order": True,
+                "phone": message.text,
+            }
+            db.update_order_data_by_step(**update_data)
+            bot.send_message(
+                chat_id=message.chat.id,
+                text="🙏 Спасибо, мы скоро свяжеимся с вами.",
+                parse_mode="Markdown",
+            )
+        else:
+            bot.send_message(
+                chat_id=message.chat.id,
+                text="❌ Номер не валиден, попробуйте снова ввести номер",
+                parse_mode="Markdown",
+            )
+            bot.register_next_step_handler(message=message, callback=handle_phone)
+
+
 @bot.callback_query_handler(
     func=lambda call: call.data in [CallbackData.create_order.value]
 )
 @handler_error_decorator(func_name="create_order")
-def create_order(call: types.CallbackQuery):
+def create_order(call: types.CallbackQuery, is_next_step: bool = False):
     bot.answer_callback_query(callback_query_id=call.id)
-    order = db.get_order_data_by_user_id(user_id=call.from_user.id)
-    if order is None:
-        db.create_order(user_id=call.from_user.id)
-    if order:
+    if is_next_step is False:
+        db.delete_order_data_by_user_id(user_id=call.from_user.id)
+    order = None
+    order_saved = db.get_order_data_by_user_id(user_id=call.from_user.id)
+
+    if order_saved is None:
+        order = db.create_order(user_id=call.from_user.id)
+    else:
+        order = order_saved
+
+    if order.is_created_order is False:
         count_steps = len(Step)
 
         if order.current_step <= count_steps:
-            options = step_options[order.current_step]
+            options = STEP_OPTIONS[order.current_step]
 
             button_menu = options["get_menu"](order.current_step)
 
@@ -110,8 +98,13 @@ def create_order(call: types.CallbackQuery):
                 parse_mode="Markdown",
                 reply_markup=button_menu,
             )
-        elif order.is_created_order:
-            pass
+    elif order.is_created_order is True:
+        bot.send_message(
+            chat_id=call.message.chat.id,
+            text="Напишите после данного сообщения свой номер телефона, чтобы мы могли с вами связать.",
+            parse_mode="Markdown",
+        )
+        bot.register_next_step_handler(message=call.message, callback=handle_phone)
 
 
 def handle_step(call: types.CallbackQuery, prefix: str, field_name: FieldName):
@@ -130,13 +123,14 @@ def handle_step(call: types.CallbackQuery, prefix: str, field_name: FieldName):
                 return
 
             update_data: dict[FieldName, Union[str, int, None]] = {
-                field_name: int(value) if value.isdigit() else value,
+                "user_id": call.from_user.id,
+                field_name: value,
                 "current_step": next_step,
                 "is_created_order": is_last_step,
             }
 
-            db.update_order_data_by_step(user_id=call.from_user.id, **update_data)
-            create_order(call=call)
+            db.update_order_data_by_step(**update_data)
+            create_order(call=call, is_next_step=True)
 
 
 @bot.callback_query_handler(func=has_value_in_data_name(PREFIX_COUNTRY))
