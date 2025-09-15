@@ -79,7 +79,7 @@ def unsubscribe_user(user_id: int, session: Session):
 def unsubscribe_user_impl(user_id: int, session: Session):
     response = select(UserModel).where(UserModel.user_id == user_id)
     user = session.scalar(response)
-    if user is not None:
+    if user:
         session.delete(user)
         session.commit()
 
