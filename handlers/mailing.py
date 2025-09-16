@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Callable
 from telebot import types
 from config import (
     ADMIN_COMMANDS,
@@ -25,8 +25,8 @@ import database.controllers as db
 from bot_core import bot
 
 
-def is_admin(value: int):
-    if str(value) in FORMATTED_ADMIN_IDS:
+def is_admin(user_id: int):
+    if str(user_id) in FORMATTED_ADMIN_IDS:
         return True
     return False
 
@@ -64,13 +64,22 @@ def send_message_about_mailing_error(*args):
         db.remove_content()
 
 
+def is_access_to_mailing(user_id: int, text: str | None = None) -> bool:
+    start_mailing_data = db.get_start_mailing_data()
+    if text and text in BOT_COMMANDS:
+        return False
+    if not is_admin(user_id=user_id) or start_mailing_data.value is not True:
+        return False
+    return True
+
+
 @bot.message_handler(commands=[CommandNames.start.value])
 @handler_error_decorator(func_name="handle_subscribe")
 def handle_subscribe(message: types.Message):
 
     user = message.from_user
     user_subscriber = db.get_user(user.id)
-    is_admin_user = is_admin(message.from_user.id)
+    is_admin_user = is_admin(user_id=message.from_user.id)
     role = RoleEnum.ADMIN if is_admin_user else RoleEnum.USER
 
     if user_subscriber is None:
@@ -130,7 +139,6 @@ def handle_unsubscribe(message: types.Message):
     callBack=send_message_about_mailing_error, func_name="start_mailing"
 )
 def start_mailing(message: types.Message):
-
     set_value_about_start_mailing(value=True)
 
     bot.send_message(
@@ -140,27 +148,30 @@ def start_mailing(message: types.Message):
     )
 
 
-@bot.message_handler(commands=[CommandNames.number_subscribers.value])
+@bot.message_handler(
+    commands=[CommandNames.number_subscribers.value],
+    func=lambda message: is_admin(user_id=message.from_user.id),
+)
 @handler_error_decorator(func_name="handle_number_subscribers")
 def handle_number_subscribers(message: types.Message):
-
-    count = db.get_count_users()
-    bot.send_message(
-        chat_id=message.chat.id,
-        text=f"Количество подписчиков - *{count}*",
-        parse_mode="Markdown",
-    )
+    if is_admin(user_id=message.from_user.id):
+        count = db.get_count_users()
+        bot.send_message(
+            chat_id=message.chat.id,
+            text=f"Количество подписчиков - *{count}*",
+            parse_mode="Markdown",
+        )
 
 
 @bot.message_handler(
-    commands=[CommandNames.done.value, CommandNames.start_mailing.value]
+    commands=[CommandNames.done.value, CommandNames.start_mailing.value],
+    func=lambda message: is_admin(user_id=message.from_user.id),
 )
 @handler_error_decorator(
     callBack=send_message_about_mailing_error,
     func_name="handle_control_start_mailing",
 )
 def handle_control_start_mailing(message: types.Message):
-
     if message.text == f"/{CommandNames.done.value}":
         if db.check_content() == False:
             bot.send_message(
@@ -176,21 +187,17 @@ def handle_control_start_mailing(message: types.Message):
         start_mailing(message=message)
 
 
-@bot.message_handler(content_types=["text"])
+@bot.message_handler(
+    content_types=["text"],
+    func=lambda message: is_access_to_mailing(
+        user_id=message.from_user.id, text=message.text
+    ),
+)
 @handler_error_decorator(
     callBack=send_message_about_mailing_error, func_name="handle_text_messages"
 )
 def handle_text_messages(message: types.Message):
-    # Пропускаем команды, которые уже обработаны другим хэндлером
-    if message.text in BOT_COMMANDS:
-        return
-
-    start_mailing_data = db.get_start_mailing_data()
-    if start_mailing_data.value is not True:
-        return
-
     content = get_formatted_content(message)
-
     if content is not None:
         db.add_mailing_content(content)
 
@@ -201,15 +208,16 @@ def handle_text_messages(message: types.Message):
     )
 
 
-@bot.message_handler(content_types=["photo", "video"])
+@bot.message_handler(
+    content_types=["photo", "video"],
+    func=lambda message: is_access_to_mailing(
+        user_id=message.from_user.id, text=message.text
+    ),
+)
 @handler_error_decorator(
     callBack=send_message_about_mailing_error, func_name="handle_media_messages"
 )
 def handle_media_messages(message: types.Message):
-    start_mailing_data = db.get_start_mailing_data()
-    if start_mailing_data.value is not True:
-        return
-
     content = get_formatted_content(message)
 
     # Для медиа используем задержку перед ответом
@@ -276,8 +284,10 @@ def send_content_to_chat_by_id(
 
 
 @bot.callback_query_handler(
-    func=lambda call: call.data
-    in ["confirm_mailing", "cancel_mailing", "preview_content"]
+    func=lambda call: (
+        call.data in ["confirm_mailing", "cancel_mailing", "preview_content"]
+    )
+    and is_access_to_mailing(call.from_user.id)
 )
 @handler_error_decorator(
     callBack=send_message_about_mailing_error, func_name="handle_confirm_mailing"
