@@ -155,6 +155,7 @@ def start_mailing(message: types.Message):
 @handler_error_decorator(func_name="handle_number_subscribers")
 def handle_number_subscribers(message: types.Message):
     if is_admin(user_id=message.from_user.id):
+        set_value_about_start_mailing(value=False)
         count = db.get_count_users()
         bot.send_message(
             chat_id=message.chat.id,
@@ -165,7 +166,7 @@ def handle_number_subscribers(message: types.Message):
 
 @bot.message_handler(
     commands=[CommandNames.done.value, CommandNames.start_mailing.value],
-    func=lambda message: is_admin(user_id=message.from_user.id),
+    func=lambda message: is_access_to_mailing(user_id=message.from_user.id),
 )
 @handler_error_decorator(
     callBack=send_message_about_mailing_error,
