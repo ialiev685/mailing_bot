@@ -68,6 +68,11 @@ def handle_phone(message: types.Message):
             bot.register_next_step_handler(message=message, callback=handle_phone)
 
 
+def init_new_order(call: types.CallbackQuery):
+    db.delete_order_data_by_user_id(user_id=call.from_user.id)
+    db.create_order(user_id=call.from_user.id)
+
+
 @bot.callback_query_handler(
     func=lambda call: call.data in [CallbackData.create_order.value]
 )
@@ -75,14 +80,8 @@ def handle_phone(message: types.Message):
 def create_order(call: types.CallbackQuery, is_next_step: bool = False):
     bot.answer_callback_query(callback_query_id=call.id)
     if is_next_step is False:
-        db.delete_order_data_by_user_id(user_id=call.from_user.id)
-    order = None
-    order_saved = db.get_order_data_by_user_id(user_id=call.from_user.id)
-
-    if order_saved is None:
-        order = db.create_order(user_id=call.from_user.id)
-    else:
-        order = order_saved
+        init_new_order(call=call)
+    order = db.get_order_data_by_user_id(user_id=call.from_user.id)
 
     if order.is_created_order is False:
         count_steps = len(Step)
@@ -111,8 +110,10 @@ def handle_step(call: types.CallbackQuery, prefix: str, field_name: FieldName):
 
     if call.data:
         bot.answer_callback_query(callback_query_id=call.id)
-        current_step = get_step_number_from_button_data(call.data)
         order = db.get_order_data_by_user_id(user_id=call.from_user.id)
+        if order.is_created_order:
+            return
+        current_step = get_step_number_from_button_data(call.data)
 
         if current_step and order.current_step == current_step:
             is_last_step = current_step == len(Step)
