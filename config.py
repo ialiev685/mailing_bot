@@ -37,6 +37,12 @@ USER_COMMANDS = [
 ]
 
 
+def is_admin(user_id: int):
+    if str(user_id) in FORMATTED_ADMIN_IDS:
+        return True
+    return False
+
+
 class CallbackData(Enum):
     create_order = "create_order"
     about = "about"
