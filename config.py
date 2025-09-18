@@ -8,6 +8,7 @@ import os
 load_dotenv(".env")
 
 ADMIN_ID = os.getenv("ADMIN_ID", None)
+BOT_NAME = os.getenv("BOT_NAME", None)
 FORMATTED_ADMIN_IDS = ADMIN_ID.split(",") if ADMIN_ID else []
 
 
@@ -18,20 +19,15 @@ class CommandNames(Enum):
     about = "about"
     stop = "stop"
     done = "done"
+    admin = "admin"
+    order = "order"
 
 
 BOT_COMMANDS = {f"/{cmd.value}" for cmd in CommandNames}
 
 
-ADMIN_COMMANDS = [
-    types.BotCommand(CommandNames.start.value, "Запуск бота"),
-    types.BotCommand(CommandNames.start_mailing.value, "Начать рассылку"),
-    types.BotCommand(CommandNames.number_subscribers.value, "Число подписчиков"),
-    types.BotCommand(CommandNames.stop.value, "Отписаться"),
-]
-
-
 USER_COMMANDS = [
+    types.BotCommand(CommandNames.order.value, "Подобрать тур"),
     types.BotCommand(CommandNames.about.value, "О нас"),
     types.BotCommand(CommandNames.stop.value, "Отписаться"),
 ]
@@ -91,8 +87,8 @@ MONTHS = [
 
 SOCIAL_NETWORKS = [
     "По телефону",
-    "whatsapp",
-    "Telegram",
+    "В whatsapp",
+    "В telegram",
 ]
 
 
