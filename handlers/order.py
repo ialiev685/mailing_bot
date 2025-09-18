@@ -10,6 +10,7 @@ from config import (
     PREFIX_SOCIAL,
     Step,
     STEP_OPTIONS,
+    CommandNames,
 )
 from telebot import types
 import database.controllers as db
@@ -73,12 +74,30 @@ def init_new_order(call: types.CallbackQuery):
     db.create_order(user_id=call.from_user.id)
 
 
+@bot.message_handler(commands=[CommandNames.order.value])
+@handler_error_decorator(func_name="handle_unsubscribe")
+def handle_begin_create_order(message: types.Message):
+
+    # имитация вызова кнопки
+    class FakeCall:
+        def __init__(self, message: types.Message):
+            self.id = "fake_call_id"
+            self.message = message
+            self.data = CallbackData.create_order
+            self.from_user = message.from_user
+
+    fakeCall = FakeCall(message=message)
+
+    create_order(call=fakeCall)
+
+
 @bot.callback_query_handler(
     func=lambda call: call.data in [CallbackData.create_order.value]
 )
 @handler_error_decorator(func_name="create_order")
 def create_order(call: types.CallbackQuery, is_next_step: bool = False):
-    bot.answer_callback_query(callback_query_id=call.id)
+    if not isinstance(call.id, str):
+        bot.answer_callback_query(callback_query_id=call.id)
     if is_next_step is False:
         init_new_order(call=call)
     order = db.get_order_data_by_user_id(user_id=call.from_user.id)

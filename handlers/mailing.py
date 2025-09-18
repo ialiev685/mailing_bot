@@ -1,4 +1,4 @@
-from typing import Union, Callable
+from typing import Union
 from telebot import types
 from config import CommandNames, BOT_COMMANDS, is_admin
 from object_types import (
@@ -52,9 +52,7 @@ def is_access_to_mailing(user_id: int, text: str | None = None) -> bool:
 @bot.message_handler(commands=[CommandNames.stop.value])
 @handler_error_decorator(func_name="handle_unsubscribe")
 def handle_unsubscribe(message: types.Message):
-
     db.unsubscribe_user(message.from_user.id)
-
     bot.send_message(
         chat_id=message.chat.id,
         text=f"Вы отписались 😢",
@@ -62,46 +60,38 @@ def handle_unsubscribe(message: types.Message):
     )
 
 
-@handler_error_decorator(
-    callBack=send_message_about_mailing_error, func_name="start_mailing"
+@bot.callback_query_handler(
+    func=lambda call: call.data == CommandNames.number_subscribers.value
+    and is_admin(user_id=call.from_user.id),
 )
-def start_mailing(message: types.Message):
-    set_value_about_start_mailing(value=True)
-
+@handler_error_decorator(func_name="handle_number_subscribers")
+def handle_number_subscribers(call: types.CallbackQuery):
+    bot.answer_callback_query(callback_query_id=call.id)
+    set_value_about_start_mailing(value=False)
+    count = db.get_count_users()
     bot.send_message(
-        chat_id=message.chat.id,
-        text=f"✍️ Вставьте сообщение (фото или текст, можно несколько) для рассылки.\n\n*Выполните команду /{CommandNames.done.value} когда закончите вставку необходимого контента.*",
+        chat_id=call.message.chat.id,
+        text=f"Количество подписчиков - *{count}*",
         parse_mode="Markdown",
     )
 
 
-@bot.message_handler(
-    commands=[CommandNames.number_subscribers.value],
-    func=lambda message: is_admin(user_id=message.from_user.id),
-)
-@handler_error_decorator(func_name="handle_number_subscribers")
-def handle_number_subscribers(message: types.Message):
-    if is_admin(user_id=message.from_user.id):
-        set_value_about_start_mailing(value=False)
-        count = db.get_count_users()
-        bot.send_message(
-            chat_id=message.chat.id,
-            text=f"Количество подписчиков - *{count}*",
-            parse_mode="Markdown",
-        )
-
-
-@bot.message_handler(
-    commands=[CommandNames.start_mailing.value],
-    func=lambda message: is_admin(user_id=message.from_user.id),
+@bot.callback_query_handler(
+    func=lambda call: call.data == CommandNames.start_mailing.value
+    and is_admin(user_id=call.from_user.id),
 )
 @handler_error_decorator(
     callBack=send_message_about_mailing_error,
     func_name="handle_control_start_mailing",
 )
-def handle_control_start_mailing(message: types.Message):
-    if message.text == f"/{CommandNames.start_mailing.value}":
-        start_mailing(message=message)
+def handle_control_start_mailing(call: types.CallbackQuery):
+    bot.answer_callback_query(callback_query_id=call.id)
+    set_value_about_start_mailing(value=True)
+    bot.send_message(
+        chat_id=call.message.chat.id,
+        text=f"✍️ Вставьте сообщение (фото или текст, можно несколько) для рассылки.\n\n*Выполните команду /{CommandNames.done.value} когда закончите вставку необходимого контента.*",
+        parse_mode="Markdown",
+    )
 
 
 @bot.message_handler(
@@ -231,6 +221,7 @@ def send_content_to_chat_by_id(
     callBack=send_message_about_mailing_error, func_name="handle_confirm_mailing"
 )
 def handle_confirm_mailing(call: types.CallbackQuery):
+    bot.answer_callback_query(callback_query_id=call.id)
     bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
     if call.data == "preview_content":
