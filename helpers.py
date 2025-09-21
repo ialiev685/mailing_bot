@@ -10,7 +10,6 @@ from object_types import (
 )
 from database.models import MailingContentModel
 from telebot import types
-from collections import defaultdict
 from database.core import engine
 from sqlalchemy.orm import Session
 import error_handlers as error_instance

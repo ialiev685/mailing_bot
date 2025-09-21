@@ -11,6 +11,7 @@ from config import (
     Step,
     STEP_OPTIONS,
     CommandNames,
+    CHAT_ID_FOR_SEND_ORDER,
 )
 from telebot import types
 import database.controllers as db
@@ -19,6 +20,9 @@ from typing import Any, Callable, TypedDict, Union
 import re
 
 from object_types import FieldName
+
+
+text_waiting_after_create_order = "Напишите в ответ на данное сообщение свой номер телефона, чтобы мы могли с вами связаться."
 
 
 def has_value_in_data_name(value: str) -> Callable:
@@ -41,32 +45,64 @@ def get_order_value_from_button_data(data: str, prefix: str) -> str | None:
     return response_by_country.group(1) if response_by_country else None
 
 
-def handle_phone(message: types.Message):
-    if message.content_type == "text" and message.text:
-        is_valid_phone = re.match(
-            r"^(\+7|7|8)?[\s\-\(\)]*9\d{2}[\s\-\(\)]*\d{3}[\s\-\(\)]*\d{2}[\s\-\(\)]*\d{2}$",
-            message.text,
+def check_valid_phone(text: str):
+    is_valid_phone = re.match(
+        r"^(\+7|7|8)?[\s\-\(\)]*9\d{2}[\s\-\(\)]*\d{3}[\s\-\(\)]*\d{2}[\s\-\(\)]*\d{2}$",
+        text,
+    )
+    return is_valid_phone
+
+
+@bot.message_handler(
+    content_types=["text"],
+    func=lambda message: message.reply_to_message is not None
+    and message.reply_to_message.from_user.is_bot
+    and message.reply_to_message.text == text_waiting_after_create_order,
+)
+@handler_error_decorator(func_name="set_number_phone_after_create_order")
+def set_number_phone_after_create_order(message: types.Message):
+    order = db.get_order_data_by_user_id(user_id=message.from_user.id)
+
+    if order and order.is_created_order and check_valid_phone(message.text):
+        update_data: dict[FieldName, Union[str, int, None]] = {
+            "user_id": message.from_user.id,
+            "current_step": len(Step),
+            "is_created_order": True,
+            "phone": message.text,
+        }
+        order_updated = db.update_order_data_by_step(**update_data)
+        bot.send_message(
+            chat_id=message.chat.id,
+            text="🙏 Спасибо, мы скоро свяжеимся с вами.",
+            parse_mode="Markdown",
         )
-        if is_valid_phone:
-            update_data: dict[FieldName, Union[str, int, None]] = {
-                "user_id": message.from_user.id,
-                "current_step": len(Step),
-                "is_created_order": True,
-                "phone": message.text,
-            }
-            db.update_order_data_by_step(**update_data)
-            bot.send_message(
-                chat_id=message.chat.id,
-                text="🙏 Спасибо, мы скоро свяжеимся с вами.",
-                parse_mode="Markdown",
-            )
-        else:
-            bot.send_message(
-                chat_id=message.chat.id,
-                text="❌ Номер не валиден, попробуйте снова ввести номер",
-                parse_mode="Markdown",
-            )
-            bot.register_next_step_handler(message=message, callback=handle_phone)
+
+        formatted_order = {
+            "Направление": order_updated.to_country,
+            "Кол-во человек": order_updated.count_people,
+            "Кол-во дней": order_updated.count_days,
+            "Месяц отпуска": order_updated.month,
+            "Бюджет": order_updated.price,
+            "Отправить предложение": order_updated.connection,
+            "Контактные данные": order_updated.phone,
+        }
+
+        order_details = "\n".join(
+            [f"<b>{key}</b>: {value}" for key, value in formatted_order.items()]
+        )
+        print(CHAT_ID_FOR_SEND_ORDER)
+        bot.send_message(
+            chat_id=CHAT_ID_FOR_SEND_ORDER,
+            text=f"Вам заказ из телеграм-бота.\n\n{order_details}",
+            parse_mode="HTML",
+        )
+
+    else:
+        bot.send_message(
+            chat_id=message.chat.id,
+            text="❌ Номер не валиден, попробуйте снова ввести номер",
+            parse_mode="Markdown",
+        )
 
 
 def init_new_order(call: types.CallbackQuery):
@@ -116,13 +152,13 @@ def create_order(call: types.CallbackQuery, is_next_step: bool = False):
                 parse_mode="Markdown",
                 reply_markup=button_menu,
             )
+
     elif order.is_created_order is True:
         bot.send_message(
             chat_id=call.message.chat.id,
-            text="Напишите после данного сообщения свой номер телефона, чтобы мы могли с вами связать.",
+            text=text_waiting_after_create_order,
             parse_mode="Markdown",
         )
-        bot.register_next_step_handler(message=call.message, callback=handle_phone)
 
 
 def handle_step(call: types.CallbackQuery, prefix: str, field_name: FieldName):
