@@ -73,3 +73,8 @@ class GetCountUsersError(BaseError):
 class CreateOrderError(BaseError):
     def __str__(self):
         return f"CreateOrderError: {self.message}. Exception: {self.other_args}"
+
+
+class AdminAboutUsError(BaseError):
+    def __str__(self):
+        return f"AdminAboutUsError: {self.message}. Exception: {self.other_args}"

@@ -6,6 +6,7 @@ from sqlalchemy import (
     Enum as SqlAcademyEnum,
     BigInteger,
     Integer,
+    Boolean,
 )
 from typing import Optional
 from object_types import RoleEnum
@@ -77,3 +78,12 @@ class OrderModel(BaseModel):
     connection: Mapped[str] = mapped_column(String, nullable=True)
     is_created_order: Mapped[bool] = mapped_column(default=False)
     phone: Mapped[str] = mapped_column(nullable=True)
+
+
+class AboutUs(BaseModel):
+    __tablename__ = "about_us"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chat_id: Mapped[int] = mapped_column(Integer, nullable=True)
+    message_id: Mapped[int] = mapped_column(Integer, nullable=True)
+    file_id: Mapped[str] = mapped_column(String, nullable=True)
+    is_draft: Mapped[bool] = mapped_column(Boolean, default=True)
