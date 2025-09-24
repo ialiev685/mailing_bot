@@ -1,9 +1,9 @@
 import telebot
 from dotenv import load_dotenv
 import os
+from config import API_TOKEN
 
 load_dotenv(".env")
 
-API_TOKEN = os.getenv("BOT_TOKEN", None)
 
 bot = telebot.TeleBot(API_TOKEN)

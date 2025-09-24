@@ -55,6 +55,7 @@ def create_user_impl(
         subscriber = SubscriberModel(chat_id=chat_id, signed=True, user=user)
         session.add(subscriber)
         session.commit()
+        session.refresh(user)
         return user
 
     return user_subscriber

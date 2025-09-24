@@ -11,6 +11,9 @@ ADMIN_ID = os.getenv("ADMIN_ID", None)
 BOT_NAME = os.getenv("BOT_NAME", None)
 CHAT_ID_FOR_SEND_ORDER = os.getenv("CHAT_ID_FOR_SEND_ORDER", None)
 FORMATTED_ADMIN_IDS = ADMIN_ID.split(",") if ADMIN_ID else []
+API_TOKEN = os.getenv("BOT_TOKEN", None)
+
+PATH_ABOUT_IMAGE = "static/about.jpg"
 
 
 class CommandNames(Enum):
