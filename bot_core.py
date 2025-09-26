@@ -5,5 +5,5 @@ from config import API_TOKEN
 
 load_dotenv(".env")
 
-
-bot = telebot.TeleBot(API_TOKEN)
+if API_TOKEN:
+    bot = telebot.TeleBot(API_TOKEN)

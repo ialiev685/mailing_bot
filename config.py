@@ -13,13 +13,9 @@ CHAT_ID_FOR_SEND_ORDER = os.getenv("CHAT_ID_FOR_SEND_ORDER", None)
 FORMATTED_ADMIN_IDS = ADMIN_ID.split(",") if ADMIN_ID else []
 API_TOKEN = os.getenv("BOT_TOKEN", None)
 
-PATH_ABOUT_IMAGE = "static/about.jpg"
-
 
 class CommandNames(Enum):
     start = "start"
-    start_mailing = "start_mailing"
-    number_subscribers = "number_subscribers"
     about = "about"
     stop = "stop"
     done = "done"
@@ -43,10 +39,16 @@ def is_admin(user_id: int):
     return False
 
 
-class CallbackData(Enum):
+class UsersCallbackData(Enum):
     create_order = "create_order"
     about = "about"
     link_to_site = "link_to_site"
+
+
+class AdminCallbackData(Enum):
+    start_mailing = "start_mailing"
+    number_subscribers = "number_subscribers"
+    upload_about_us = "upload_abous_us"
 
 
 class Step(Enum):
