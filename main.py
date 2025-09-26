@@ -7,7 +7,7 @@ from handlers.admin import *
 
 
 from telebot import types
-from config import CommandNames, CallbackData, USER_COMMANDS, BOT_NAME
+from config import CommandNames, UsersCallbackData, USER_COMMANDS, BOT_NAME
 from object_types import RoleEnum
 
 
@@ -17,18 +17,51 @@ import database.controllers as db
 from bot_core import bot
 
 
+@bot.callback_query_handler(
+    func=lambda call: call.data == UsersCallbackData.about.value
+    and is_admin(user_id=call.from_user.id),
+)
+@handler_error_decorator(func_name="handle_info_about_us")
+def get_info_about_us(call: types.CallbackQuery):
+    if not isinstance(call.id, str):
+        bot.answer_callback_query(callback_query_id=call.id)
+
+    about_us_data = db.get_about_us_data()
+    bot.send_photo(
+        chat_id=call.message.chat.id,
+        photo=about_us_data.file_id,
+        caption=about_us_data.caption,
+    )
+
+
+@bot.message_handler(commands=[CommandNames.about.value])
+@handler_error_decorator(func_name="handle_info_about_us")
+def handle_info_about_us(message: types.Message):
+    # имитация вызова кнопки
+    class FakeCall:
+        def __init__(self, message: types.Message):
+            self.id = "fake_call_id"
+            self.message = message
+            self.data = UsersCallbackData.about.value
+            self.from_user = message.from_user
+
+    fakeCall = FakeCall(message=message)
+
+    get_info_about_us(call=fakeCall)
+
+
 def create_shared_menu() -> types.InlineKeyboardMarkup:
     markup_object = types.InlineKeyboardMarkup()
     button_create_order = types.InlineKeyboardButton(
-        text="✈️ Подобрать тур", callback_data=CallbackData.create_order.value
+        text="✈️ Подобрать тур", callback_data=UsersCallbackData.create_order.value
     )
     button_link_to_site = types.InlineKeyboardButton(
         text="✍️ Cвое предложение",
-        callback_data=CallbackData.link_to_site.value,
+        callback_data=UsersCallbackData.link_to_site.value,
         url="https://www.all-inc-travel-online.ru",
     )
     button_about = types.InlineKeyboardButton(
-        text="💬 О нас", callback_data=CallbackData.about.value
+        text="💬 О нас", callback_data=UsersCallbackData.about.value
     )
     markup_object.add(button_create_order)
     markup_object.add(button_link_to_site)
@@ -39,6 +72,8 @@ def create_shared_menu() -> types.InlineKeyboardMarkup:
 @bot.message_handler(commands=[CommandNames.start.value])
 @handler_error_decorator(func_name="handle_subscribe")
 def handle_subscribe(message: types.Message):
+    if not message.from_user:
+        return
 
     user = message.from_user
     user_subscriber = db.get_user(user.id)

@@ -1,7 +1,65 @@
 from bot_core import bot
-from config import CommandNames, is_admin
-from helpers import handler_error_decorator
+from config import CommandNames, AdminCallbackData, is_admin
+from helpers import get_optimal_photo, handler_error_decorator
 from telebot import types
+import database.controllers as db
+from handlers.mailing import set_value_about_start_mailing
+
+CONTENT_ABOUT_US = "📥 Загрузите фотографию с описанием."
+
+
+@bot.callback_query_handler(
+    func=lambda call: call.data == AdminCallbackData.number_subscribers.value
+    and is_admin(user_id=call.from_user.id),
+)
+@handler_error_decorator(func_name="handle_number_subscribers")
+def get_number_subscribers(call: types.CallbackQuery):
+    bot.answer_callback_query(callback_query_id=call.id)
+    set_value_about_start_mailing(value=False)
+    count = db.get_count_users()
+    bot.send_message(
+        chat_id=call.message.chat.id,
+        text=f"Количество подписчиков - *{count}*",
+        parse_mode="Markdown",
+    )
+
+
+@bot.callback_query_handler(
+    func=lambda call: call.data == AdminCallbackData.upload_about_us.value
+    and is_admin(user_id=call.from_user.id),
+)
+@handler_error_decorator(func_name="handle_set_content_about_us")
+def set_content_about_us(call: types.CallbackQuery):
+    bot.answer_callback_query(callback_query_id=call.id)
+    msg = bot.send_message(chat_id=call.message.chat.id, text=CONTENT_ABOUT_US)
+    bot.register_next_step_handler(message=msg, callback=upload_content_about_us)
+
+
+@handler_error_decorator(func_name="handle_upload_content_about_us")
+def upload_content_about_us(message: types.Message):
+    if (
+        message.content_type == "photo"
+        and message.from_user
+        and is_admin(message.from_user.id)
+    ):
+
+        if message.media_group_id is not None:
+            bot.reply_to(message=message, text="⚠️ Загрузите только одноу фотографию.")
+            return
+        if message.caption is None:
+            bot.reply_to(message=message, text="⚠️ Добавьте описание к фтографии.")
+            return
+
+        photo = get_optimal_photo(photo_list=message.photo)
+        updated_content = db.create_about_us_data(
+            message_id=message.message_id,
+            chat_id=message.chat.id,
+            file_id=photo.file_id,
+            caption=message.caption,
+        )
+
+        if updated_content:
+            bot.reply_to(message=message, text="✅ Контент добавлен.")
 
 
 @bot.message_handler(
@@ -13,19 +71,24 @@ def handle_call_admin_panel(message: types.Message):
 
     markup_object = types.InlineKeyboardMarkup()
     button_start_mailing = types.InlineKeyboardButton(
-        text="📨 Начать рассылку", callback_data=CommandNames.start_mailing.value
+        text="📨 Начать рассылку", callback_data=AdminCallbackData.start_mailing.value
     )
     button_count_subscribes = types.InlineKeyboardButton(
         text="🧑‍🤝‍🧑 Количество подписчиков",
-        callback_data=CommandNames.number_subscribers.value,
+        callback_data=AdminCallbackData.number_subscribers.value,
+    )
+    button_upload_about_us_content = types.InlineKeyboardButton(
+        text="🎬 Загрузить контент о себе",
+        callback_data=AdminCallbackData.upload_about_us.value,
     )
 
     markup_object.add(button_start_mailing)
     markup_object.add(button_count_subscribes)
+    markup_object.add(button_upload_about_us_content)
 
     bot.send_message(
         chat_id=message.chat.id,
-        text=f"Выбирите необходимое действие, {message.from_user.first_name}\n",
+        text=f"Выбирите необходимое действие\n",
         parse_mode="Markdown",
         reply_markup=markup_object,
     )
