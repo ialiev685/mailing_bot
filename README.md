@@ -29,3 +29,7 @@ CREATE DATABASE name_db; - создание новой бд с необходи�
 pip freeze > requirements.txt - запись зависимостей
 
 pip install -r requirements.txt - установка зависимостей
+
+SQL
+SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'; - вывести все таблицы
+DROP TABLE name - удалить таблицу

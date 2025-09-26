@@ -1,6 +1,5 @@
 from bot_core import bot
 from config import (
-    CallbackData,
     PREFIX_CURRENT_STEP,
     PREFIX_COUNTRY,
     PREFIX_DAYS,
@@ -12,6 +11,7 @@ from config import (
     STEP_OPTIONS,
     CommandNames,
     CHAT_ID_FOR_SEND_ORDER,
+    UsersCallbackData,
 )
 from telebot import types
 import database.controllers as db
@@ -28,7 +28,11 @@ text_waiting_after_create_order = "Напишите в ответ на данн�
 def has_value_in_data_name(value: str) -> Callable:
     def callback(query: Any) -> bool:
         if isinstance(query, types.CallbackQuery):
-            return query.data and query.data.startswith(value)
+            return (
+                hasattr(query, "data")
+                and isinstance(query.data, str)
+                and query.data.startswith(value)
+            )
 
         return False
 
@@ -61,6 +65,9 @@ def check_valid_phone(text: str):
 )
 @handler_error_decorator(func_name="set_number_phone_after_create_order")
 def set_number_phone_after_create_order(message: types.Message):
+    if not message.from_user or not message.text:
+        return
+
     order = db.get_order_data_by_user_id(user_id=message.from_user.id)
 
     if order and order.is_created_order and check_valid_phone(message.text):
@@ -90,9 +97,9 @@ def set_number_phone_after_create_order(message: types.Message):
         order_details = "\n".join(
             [f"<b>{key}</b>: {value}" for key, value in formatted_order.items()]
         )
-        print(CHAT_ID_FOR_SEND_ORDER)
+
         bot.send_message(
-            chat_id=CHAT_ID_FOR_SEND_ORDER,
+            chat_id=CHAT_ID_FOR_SEND_ORDER if CHAT_ID_FOR_SEND_ORDER else "",
             text=f"Вам заказ из телеграм-бота.\n\n{order_details}",
             parse_mode="HTML",
         )
@@ -119,7 +126,7 @@ def handle_begin_create_order(message: types.Message):
         def __init__(self, message: types.Message):
             self.id = "fake_call_id"
             self.message = message
-            self.data = CallbackData.create_order
+            self.data = UsersCallbackData.create_order.value
             self.from_user = message.from_user
 
     fakeCall = FakeCall(message=message)
@@ -128,7 +135,7 @@ def handle_begin_create_order(message: types.Message):
 
 
 @bot.callback_query_handler(
-    func=lambda call: call.data in [CallbackData.create_order.value]
+    func=lambda call: call.data in [UsersCallbackData.create_order.value]
 )
 @handler_error_decorator(func_name="create_order")
 def create_order(call: types.CallbackQuery, is_next_step: bool = False):

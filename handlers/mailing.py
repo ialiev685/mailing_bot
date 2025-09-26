@@ -1,6 +1,11 @@
 from typing import Union
 from telebot import types
-from config import CommandNames, BOT_COMMANDS, is_admin
+from config import (
+    CommandNames,
+    BOT_COMMANDS,
+    is_admin,
+    AdminCallbackData,
+)
 from object_types import (
     MailingContentType,
     MailingTextContentTypeModel,
@@ -52,32 +57,17 @@ def is_access_to_mailing(user_id: int, text: str | None = None) -> bool:
 @bot.message_handler(commands=[CommandNames.stop.value])
 @handler_error_decorator(func_name="handle_unsubscribe")
 def handle_unsubscribe(message: types.Message):
-    db.unsubscribe_user(message.from_user.id)
-    bot.send_message(
-        chat_id=message.chat.id,
-        text=f"Вы отписались 😢",
-        parse_mode="Markdown",
-    )
+    if message.from_user:
+        db.unsubscribe_user(message.from_user.id)
+        bot.send_message(
+            chat_id=message.chat.id,
+            text=f"Вы отписались 😢",
+            parse_mode="Markdown",
+        )
 
 
 @bot.callback_query_handler(
-    func=lambda call: call.data == CommandNames.number_subscribers.value
-    and is_admin(user_id=call.from_user.id),
-)
-@handler_error_decorator(func_name="handle_number_subscribers")
-def handle_number_subscribers(call: types.CallbackQuery):
-    bot.answer_callback_query(callback_query_id=call.id)
-    set_value_about_start_mailing(value=False)
-    count = db.get_count_users()
-    bot.send_message(
-        chat_id=call.message.chat.id,
-        text=f"Количество подписчиков - *{count}*",
-        parse_mode="Markdown",
-    )
-
-
-@bot.callback_query_handler(
-    func=lambda call: call.data == CommandNames.start_mailing.value
+    func=lambda call: call.data == AdminCallbackData.start_mailing.value
     and is_admin(user_id=call.from_user.id),
 )
 @handler_error_decorator(
@@ -194,7 +184,7 @@ def send_content_to_chat_by_id(
         if isinstance(content, MailingTextContentTypeModel):
             bot.send_message(
                 chat_id=chat_id,
-                text=content.text,
+                text=content.text if content.text else "",
                 parse_mode="Markdown",
             )
         elif isinstance(content, MailingPhotoContentTypeModel):
