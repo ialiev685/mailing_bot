@@ -86,4 +86,5 @@ class AboutUs(BaseModel):
     chat_id: Mapped[int] = mapped_column(Integer, nullable=True)
     message_id: Mapped[int] = mapped_column(Integer, nullable=True)
     file_id: Mapped[str] = mapped_column(String, nullable=True)
-    is_draft: Mapped[bool] = mapped_column(Boolean, default=True)
+    caption: Mapped[str] = mapped_column(String, nullable=True)
+    # is_draft: Mapped[bool] = mapped_column(Boolean, default=True)
