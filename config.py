@@ -114,7 +114,9 @@ PREFIX_DAYS = "days_"
 PREFIX_COUNT_PEOPLE = "people_"
 PREFIX_MONTH = "month_"
 PREFIX_PRICE = "price_"
-PREFIX_SOCIAL = "SOCIAL_"
+PREFIX_SOCIAL = "social_"
+PREFIX_CONFIRM_EDIT_ABOUT_US_CONTENT = "confirm_edit_about_us_content_"
+PREFIX_CANCEL_EDIT_ABOUT_US_CONTENT = "cancel_edit_about_us_content_"
 
 
 def factory_menu(

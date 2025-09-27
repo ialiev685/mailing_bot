@@ -1,11 +1,29 @@
+from typing import Tuple
 from bot_core import bot
-from config import CommandNames, AdminCallbackData, is_admin
-from helpers import get_optimal_photo, handler_error_decorator
+from config import (
+    CommandNames,
+    AdminCallbackData,
+    is_admin,
+    PREFIX_CONFIRM_EDIT_ABOUT_US_CONTENT,
+)
+from helpers import get_optimal_photo, handler_error_decorator, has_value_in_data_name
 from telebot import types
 import database.controllers as db
-from handlers.mailing import set_value_about_start_mailing
+import re
+
 
 CONTENT_ABOUT_US = "📥 Загрузите фотографию с описанием."
+
+
+def get_ids_from_callback_data(data: str) -> Tuple[int, int] | None:
+    response = re.search(
+        r"{}(\d+)-(\d+)".format(PREFIX_CONFIRM_EDIT_ABOUT_US_CONTENT), data
+    )
+    if response:
+        message_id = int(response.group(1))
+        chat_id = int(response.group(2))
+        return (message_id, chat_id)
+    return None
 
 
 @bot.callback_query_handler(
@@ -15,7 +33,7 @@ CONTENT_ABOUT_US = "📥 Загрузите фотографию с описан
 @handler_error_decorator(func_name="handle_number_subscribers")
 def get_number_subscribers(call: types.CallbackQuery):
     bot.answer_callback_query(callback_query_id=call.id)
-    set_value_about_start_mailing(value=False)
+
     count = db.get_count_users()
     bot.send_message(
         chat_id=call.message.chat.id,
@@ -58,8 +76,45 @@ def upload_content_about_us(message: types.Message):
             caption=message.caption,
         )
 
-        if updated_content:
-            bot.reply_to(message=message, text="✅ Контент добавлен.")
+        print("updated_content", updated_content)
+
+        markup_object = types.InlineKeyboardMarkup()
+        button_confirm = types.InlineKeyboardButton(
+            text="✅ Принять",
+            callback_data=f"{PREFIX_CONFIRM_EDIT_ABOUT_US_CONTENT}{message.message_id}-{message.chat.id}",
+        )
+        button_cancel = types.InlineKeyboardButton(
+            text="❌ Отменить",
+            callback_data=f"{PREFIX_CONFIRM_EDIT_ABOUT_US_CONTENT}{message.message_id}-{message.chat.id}",
+        )
+        markup_object.add(button_confirm, button_cancel)
+
+        bot.send_message(
+            chat_id=message.chat.id,
+            text="🔧 Вы действительно хотите изменить контент?",
+            reply_markup=markup_object,
+            parse_mode="Markdown",
+        )
+
+        # if updated_content:
+        #     bot.reply_to(message=message, text="✅ Контент добавлен.")
+
+
+@bot.callback_query_handler(
+    func=lambda call: has_value_in_data_name(PREFIX_CONFIRM_EDIT_ABOUT_US_CONTENT)(call)
+    and is_admin(user_id=call.from_user.id),
+)
+@handler_error_decorator(func_name="handle_number_subscribers")
+def confirm_upload_about_us_content(call: types.CallbackQuery):
+    bot.answer_callback_query(callback_query_id=call.id)
+
+    if call.data:
+        data = get_ids_from_callback_data(call.data)
+        one, two = data
+        print("data", one, two)
+
+
+# Меню
 
 
 @bot.message_handler(
