@@ -38,6 +38,11 @@ class RoleEnum(Enum):
     USER = "USER"
 
 
+class StatusABoutUsContent(Enum):
+    DRAFT = "DRAFT"
+    ACTIVE = "ACTIVE"
+
+
 class OrderFieldsTypeModel(BaseModel):
     user_id: int
     current_step: int

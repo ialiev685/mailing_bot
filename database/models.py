@@ -9,7 +9,7 @@ from sqlalchemy import (
     Boolean,
 )
 from typing import Optional
-from object_types import RoleEnum
+from object_types import RoleEnum, StatusABoutUsContent
 
 
 class BaseModel(DeclarativeBase):
@@ -87,4 +87,8 @@ class AboutUs(BaseModel):
     message_id: Mapped[int] = mapped_column(Integer, nullable=True)
     file_id: Mapped[str] = mapped_column(String, nullable=True)
     caption: Mapped[str] = mapped_column(String, nullable=True)
-    # is_draft: Mapped[bool] = mapped_column(Boolean, default=True)
+    status: Mapped[StatusABoutUsContent] = mapped_column(
+        SqlAcademyEnum(StatusABoutUsContent),
+        default=StatusABoutUsContent.DRAFT,
+        nullable=True,
+    )
