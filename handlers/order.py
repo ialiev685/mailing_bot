@@ -15,28 +15,14 @@ from config import (
 )
 from telebot import types
 import database.controllers as db
-from helpers import handler_error_decorator
-from typing import Any, Callable, TypedDict, Union
+from helpers import handler_error_decorator, has_value_in_data_name
+from typing import Union
 import re
 
 from object_types import FieldName
 
 
 text_waiting_after_create_order = "Напишите в ответ на данное сообщение свой номер телефона, чтобы мы могли с вами связаться."
-
-
-def has_value_in_data_name(value: str) -> Callable:
-    def callback(query: Any) -> bool:
-        if isinstance(query, types.CallbackQuery):
-            return (
-                hasattr(query, "data")
-                and isinstance(query.data, str)
-                and query.data.startswith(value)
-            )
-
-        return False
-
-    return callback
 
 
 def get_step_number_from_button_data(data: str) -> int | None:

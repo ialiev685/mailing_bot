@@ -1,5 +1,5 @@
 import json
-from typing import Union, Callable, Type, Optional
+from typing import Union, Callable, Type, Optional, Any
 from telebot import types
 from error_handlers import LoadJsonError, UnknownContentType, ParseSortError
 from object_types import (
@@ -47,14 +47,13 @@ def load_json_safe(data_json: str) -> MailingContentType:
 
 
 def get_optimal_photo(
-    photo_list: Union[list[types.PhotoSize], None],
+    photo_list: list[types.PhotoSize],
 ) -> types.PhotoSize:
     photo = None
-    if photo_list:
-        if isinstance(photo_list, list) and len(photo_list) >= 3:
-            photo = photo_list[2]
-        else:
-            photo = photo_list[-1]
+    if isinstance(photo_list, list) and len(photo_list) >= 3:
+        photo = photo_list[2]
+    else:
+        photo = photo_list[-1]
 
     return photo
 
@@ -163,9 +162,7 @@ def session_decorator(errorInstance: Type[Exception], errorMessage: str):
                     return callback(*args, **kwargs, session=session)
             except Exception as error:
                 session.rollback()
-                raise errorInstance(
-                    "Произошла неизвестная ошибка при работе с БД", error
-                )
+                raise errorInstance(errorMessage, error)
 
         return wrapper
 
@@ -211,3 +208,17 @@ def handler_error_decorator(
         return wrapper
 
     return decorator
+
+
+def has_value_in_data_name(value: str) -> Callable:
+    def callback(query: Any) -> bool:
+        if isinstance(query, types.CallbackQuery):
+            return (
+                hasattr(query, "data")
+                and isinstance(query.data, str)
+                and query.data.startswith(value)
+            )
+
+        return False
+
+    return callback
