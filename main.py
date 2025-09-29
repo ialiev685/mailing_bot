@@ -23,15 +23,24 @@ from bot_core import bot
 )
 @handler_error_decorator(func_name="handle_info_about_us")
 def get_info_about_us(call: types.CallbackQuery):
+
     if not isinstance(call.id, str):
         bot.answer_callback_query(callback_query_id=call.id)
 
     about_us_data = db.get_about_us_data()
-    bot.send_photo(
-        chat_id=call.message.chat.id,
-        photo=about_us_data.file_id,
-        caption=about_us_data.caption,
-    )
+
+    if about_us_data and about_us_data.caption and about_us_data.file_id:
+        bot.send_photo(
+            chat_id=call.message.chat.id,
+            photo=about_us_data.file_id,
+            caption=about_us_data.caption,
+        )
+    else:
+        bot.send_message(
+            chat_id=call.message.chat.id,
+            text="😞 Пока нет контента.",
+            parse_mode="Markdown",
+        )
 
 
 @bot.message_handler(commands=[CommandNames.about.value])
