@@ -38,7 +38,7 @@ class RoleEnum(Enum):
     USER = "USER"
 
 
-class StatusABoutUsContent(Enum):
+class StatusAboutUsContent(Enum):
     DRAFT = "DRAFT"
     ACTIVE = "ACTIVE"
 

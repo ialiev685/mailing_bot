@@ -48,7 +48,7 @@ class UsersCallbackData(Enum):
 class AdminCallbackData(Enum):
     start_mailing = "start_mailing"
     number_subscribers = "number_subscribers"
-    upload_about_us = "upload_abous_us"
+    upload_about_us = "upload_about_us"
 
 
 class Step(Enum):
