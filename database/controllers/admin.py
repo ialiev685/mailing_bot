@@ -91,3 +91,14 @@ def get_about_us_data_impl(session: Session) -> AboutUs | None:
     query = select(AboutUs).where(AboutUs.status == StatusAboutUsContent.ACTIVE)
     about_us = session.scalar(query)
     return about_us
+
+
+@session_decorator(AdminAboutUsError, "Ошибка при получении черновых данных 'О нас': ")
+def get_draft_about_us_data(session: Session):
+    return get_about_us_data_impl(session=session)
+
+
+def get_draft_about_us_data_impl(session: Session):
+    query = select(AboutUs).where(AboutUs.status == StatusAboutUsContent.DRAFT)
+    about_us = session.scalars(query).all()
+    return about_us

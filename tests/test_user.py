@@ -1,8 +1,6 @@
 from sqlalchemy.orm import Session
 import database.controllers as db
-
 from object_types import RoleEnum
-
 from tests.core_testing import *
 
 
