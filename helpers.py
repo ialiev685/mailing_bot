@@ -1,4 +1,5 @@
 import json
+import re
 from typing import Union, Callable, Type, Optional, Any
 from telebot import types
 from error_handlers import LoadJsonError, UnknownContentType, ParseSortError
@@ -222,3 +223,11 @@ def has_value_in_data_name(value: str) -> Callable:
         return False
 
     return callback
+
+
+def check_valid_phone(text: str):
+    is_valid_phone = re.match(
+        r"^(\+7|7|8)?[\s\-\(\)]*9\d{2}[\s\-\(\)]*\d{3}[\s\-\(\)]*\d{2}[\s\-\(\)]*\d{2}$",
+        text,
+    )
+    return is_valid_phone

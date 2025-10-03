@@ -185,7 +185,7 @@ def create_social_network_button_menu(step: int) -> types.InlineKeyboardMarkup:
 
 
 class StepOptions(TypedDict):
-    get_menu: Callable[[int], None]
+    get_menu: Callable[[int], types.InlineKeyboardMarkup]
     title: str
 
 

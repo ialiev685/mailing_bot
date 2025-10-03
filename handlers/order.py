@@ -11,13 +11,16 @@ from config import (
     STEP_OPTIONS,
     CommandNames,
     CHAT_ID_FOR_SEND_ORDER,
+    StepOptions,
     UsersCallbackData,
 )
 from telebot import types
 import database.controllers as db
-from helpers import handler_error_decorator, has_value_in_data_name
-from typing import Union
+from database.models import OrderModel
+from helpers import check_valid_phone, handler_error_decorator, has_value_in_data_name
+from typing import Union, TypedDict
 import re
+
 
 from object_types import FieldName
 
@@ -33,14 +36,6 @@ def get_step_number_from_button_data(data: str) -> int | None:
 def get_order_value_from_button_data(data: str, prefix: str) -> str | None:
     response_by_country = re.search(r"{}([^_]+)-".format(prefix), data)
     return response_by_country.group(1) if response_by_country else None
-
-
-def check_valid_phone(text: str):
-    is_valid_phone = re.match(
-        r"^(\+7|7|8)?[\s\-\(\)]*9\d{2}[\s\-\(\)]*\d{3}[\s\-\(\)]*\d{2}[\s\-\(\)]*\d{2}$",
-        text,
-    )
-    return is_valid_phone
 
 
 @bot.message_handler(
@@ -120,28 +115,31 @@ def handle_begin_create_order(message: types.Message):
     create_order(call=fakeCall)
 
 
-@bot.callback_query_handler(
-    func=lambda call: call.data in [UsersCallbackData.create_order.value]
-)
-@handler_error_decorator(func_name="create_order")
-def create_order(call: types.CallbackQuery, is_next_step: bool = False):
-    if not isinstance(call.id, str):
-        bot.answer_callback_query(callback_query_id=call.id)
-    if is_next_step is False:
-        init_new_order(call=call)
-    order = db.get_order_data_by_user_id(user_id=call.from_user.id)
+class OrderStepOptions(TypedDict):
+    count_steps: int
+    options: StepOptions
 
+
+def get_order_step_options_by_current_step(
+    current_step: int,
+) -> OrderStepOptions | None:
+    count_steps = len(Step)
+    if current_step <= count_steps:
+        return {"count_steps": count_steps, "options": STEP_OPTIONS[current_step]}
+    return None
+
+
+def create_button_menu_for_order_step(call: types.CallbackQuery, order: OrderModel):
     if order.is_created_order is False:
-        count_steps = len(Step)
+        options = get_order_step_options_by_current_step(
+            current_step=order.current_step
+        )
 
-        if order.current_step <= count_steps:
-            options = STEP_OPTIONS[order.current_step]
-
-            button_menu = options["get_menu"](order.current_step)
-
+        if options:
+            button_menu = options["options"]["get_menu"](order.current_step)
             bot.send_message(
                 chat_id=call.message.chat.id,
-                text=f"*Шаг {order.current_step} из {count_steps}*\n\n {options['title']}",
+                text=f"*Шаг {order.current_step} из {options['count_steps']}*\n\n {options['options']['title']}",
                 parse_mode="Markdown",
                 reply_markup=button_menu,
             )
@@ -154,6 +152,52 @@ def create_order(call: types.CallbackQuery, is_next_step: bool = False):
         )
 
 
+@bot.callback_query_handler(
+    func=lambda call: call.data in [UsersCallbackData.create_order.value]
+)
+@handler_error_decorator(func_name="create_order")
+def create_order(
+    call: types.CallbackQuery,
+):
+    if not isinstance(call.id, str):
+        bot.answer_callback_query(callback_query_id=call.id)
+
+    init_new_order(call=call)
+    order = db.get_order_data_by_user_id(user_id=call.from_user.id)
+
+    create_button_menu_for_order_step(call=call, order=order)
+
+
+UpdateDataFromStep = dict[FieldName, Union[str, int, None]]
+
+
+@handler_error_decorator(func_name="get_updated_data_from_current_step")
+def get_updated_data_from_current_step(
+    call: types.CallbackQuery, order: OrderModel, prefix: str, field_name: FieldName
+) -> UpdateDataFromStep | None:
+    if not call.data:
+        return None
+    current_step = get_step_number_from_button_data(call.data)
+
+    if current_step and order.current_step == current_step:
+        is_last_step = current_step == len(Step)
+        next_step = current_step + 1 if current_step < len(Step) else current_step
+        value = get_order_value_from_button_data(data=call.data, prefix=prefix)
+
+        if value is None:
+            return None
+
+        update_data: UpdateDataFromStep = {
+            "user_id": call.from_user.id,
+            field_name: value,
+            "current_step": next_step,
+            "is_created_order": is_last_step,
+        }
+
+        return update_data
+    return None
+
+
 def handle_step(call: types.CallbackQuery, prefix: str, field_name: FieldName):
 
     if call.data:
@@ -161,25 +205,12 @@ def handle_step(call: types.CallbackQuery, prefix: str, field_name: FieldName):
         order = db.get_order_data_by_user_id(user_id=call.from_user.id)
         if order.is_created_order:
             return
-        current_step = get_step_number_from_button_data(call.data)
+        updated_data = get_updated_data_from_current_step(
+            call=call, order=order, prefix=prefix, field_name=field_name
+        )
 
-        if current_step and order.current_step == current_step:
-            is_last_step = current_step == len(Step)
-            next_step = current_step + 1 if current_step < len(Step) else current_step
-            value = get_order_value_from_button_data(data=call.data, prefix=prefix)
-
-            if value is None:
-                return
-
-            update_data: dict[FieldName, Union[str, int, None]] = {
-                "user_id": call.from_user.id,
-                field_name: value,
-                "current_step": next_step,
-                "is_created_order": is_last_step,
-            }
-
-            db.update_order_data_by_step(**update_data)
-            create_order(call=call, is_next_step=True)
+        updated_order = db.update_order_data_by_step(**updated_data)
+        create_button_menu_for_order_step(call=call, order=updated_order)
 
 
 @bot.callback_query_handler(func=has_value_in_data_name(PREFIX_COUNTRY))
