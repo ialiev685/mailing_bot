@@ -17,7 +17,12 @@ from config import (
 from telebot import types
 import database.controllers as db
 from database.models import OrderModel
-from helpers import check_valid_phone, handler_error_decorator, has_value_in_data_name
+from helpers import (
+    check_valid_phone,
+    create_fake_object_call,
+    handler_error_decorator,
+    has_value_in_data_name,
+)
 from typing import Union, TypedDict
 import re
 
@@ -102,15 +107,9 @@ def init_new_order(call: types.CallbackQuery):
 @handler_error_decorator(func_name="handle_unsubscribe")
 def handle_begin_create_order(message: types.Message):
 
-    # имитация вызова кнопки
-    class FakeCall:
-        def __init__(self, message: types.Message):
-            self.id = "fake_call_id"
-            self.message = message
-            self.data = UsersCallbackData.create_order.value
-            self.from_user = message.from_user
-
-    fakeCall = FakeCall(message=message)
+    fakeCall = create_fake_object_call(
+        message=message, data=UsersCallbackData.create_order.value
+    )
 
     create_order(call=fakeCall)
 

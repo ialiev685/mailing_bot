@@ -119,6 +119,10 @@ PREFIX_CONFIRM_EDIT_ABOUT_US_CONTENT = "confirm_edit_about_us_content_"
 PREFIX_CANCEL_EDIT_ABOUT_US_CONTENT = "cancel_edit_about_us_content_"
 
 
+def create_callback_data_for_button(step: int, prefix_name: str, name: str):
+    return f"{prefix_name}{name}-{PREFIX_CURRENT_STEP}{step}"
+
+
 def factory_menu(
     step: int, menu_names: list[str], prefix_name: str, count_column: int = 0
 ) -> types.InlineKeyboardMarkup:
@@ -129,7 +133,9 @@ def factory_menu(
     for index, name in enumerate(menu_names):
         button = types.InlineKeyboardButton(
             text=name,
-            callback_data=f"{prefix_name}{name}-{PREFIX_CURRENT_STEP}{step}",
+            callback_data=create_callback_data_for_button(
+                step=step, prefix_name=prefix_name, name=name
+            ),
         )
         if count_column == 0:
             markup_object.add(button)

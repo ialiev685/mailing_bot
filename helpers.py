@@ -231,3 +231,15 @@ def check_valid_phone(text: str):
         text,
     )
     return is_valid_phone
+
+
+def create_fake_object_call(message: types.Message, data: str):
+    # имитация вызова кнопки
+    class FakeCall:
+        def __init__(self, message: types.Message):
+            self.id = "fake_call_id"
+            self.message = message
+            self.data = data
+            self.from_user = message.from_user
+
+    return FakeCall(message=message)
