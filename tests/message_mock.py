@@ -32,19 +32,23 @@ class Video(types.Video):
 
 
 class Chat(types.Chat):
-    def __init__(self):
-        super().__init__(id=1, type="private", first_name="ivanov")
+    def __init__(self, chat_id=1):
+        super().__init__(id=chat_id, type="private", first_name="ivanov")
 
 
 class User(types.User):
-    def __init__(self):
-        super().__init__(id=1, first_name="ivanov", username="iivanov", is_bot=False)
+    def __init__(self, user_id=1):
+        super().__init__(
+            id=user_id, first_name="ivanov", username="iivanov", is_bot=False
+        )
 
 
 class Message(types.Message):
     def __init__(
         self,
         content_type: Literal["text", "photo", "video"],
+        user_id: int | None = None,
+        chat_id: int | None = None,
         text: str = "",
         photo_variant_ids: list[str] | None = None,
         media_group_id: str | None = None,
@@ -53,9 +57,9 @@ class Message(types.Message):
     ):
         super().__init__(
             message_id=1,
-            from_user=User(),
+            from_user=User(user_id=user_id),
             date=1754843831,
-            chat=Chat(),
+            chat=Chat(chat_id=chat_id),
             content_type=content_type,
             json_string={},
             options={},
