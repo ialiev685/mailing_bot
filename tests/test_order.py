@@ -1,12 +1,19 @@
 from config import (
     COUNTRIES,
     PREFIX_COUNTRY,
+    PREFIX_COUNT_PEOPLE,
+    PREFIX_PRICE,
+    PREFIX_MONTH,
+    PREFIX_SOCIAL,
+    PREFIX_DAYS,
     Step,
     STEP_OPTIONS,
     create_callback_data_for_button,
 )
 import database.controllers as db
 from sqlalchemy.orm import Session
+
+from object_types import FieldName
 
 from .message_mock import Message
 from handlers.order import (
@@ -15,10 +22,51 @@ from handlers.order import (
 )
 from helpers import create_fake_object_call
 from tests.core_testing import *
+from typing import TypedDict
+
+
+class StepDataMock(TypedDict):
+    prefix_name: str
+    value: str
+    field_name: FieldName
+
+
+mock_button_data_by_call: dict[int, StepDataMock] = {
+    Step.step_1.value: {
+        "prefix_name": PREFIX_COUNTRY,
+        "value": "Москва",
+        "field_name": "to_country",
+    },
+    Step.step_2.value: {
+        "prefix_name": PREFIX_COUNT_PEOPLE,
+        "value": "4",
+        "field_name": "count_people",
+    },
+    Step.step_3.value: {
+        "prefix_name": PREFIX_DAYS,
+        "value": "10",
+        "field_name": "count_days",
+    },
+    Step.step_4.value: {
+        "prefix_name": PREFIX_MONTH,
+        "value": "Май",
+        "field_name": "month",
+    },
+    Step.step_5.value: {
+        "prefix_name": PREFIX_PRICE,
+        "value": "400 000р",
+        "field_name": "price",
+    },
+    Step.step_6.value: {
+        "prefix_name": PREFIX_SOCIAL,
+        "value": "Telegram",
+        "field_name": "connection",
+    },
+}
 
 
 class TestOrder:
-    def test_create_order(self, session_testing: Session):
+    def test_start_create_order(self, session_testing: Session):
         created_order = db.create_order_impl(
             user_id=2027691758, session=session_testing
         )
@@ -55,7 +103,7 @@ class TestOrder:
                 data=create_callback_data_for_button(
                     step=order.current_step,
                     prefix_name=PREFIX_COUNTRY,
-                    name=COUNTRIES[0],
+                    value=COUNTRIES[0],
                 ),
             )
             updated_data = get_updated_data_from_current_step(
@@ -77,3 +125,104 @@ class TestOrder:
 
         else:
             raise Exception('тест "test_next_step" не прошел')
+
+    def test_create_order_from_start_to_finish(self, session_testing: Session):
+
+        created_order = db.create_order_impl(
+            user_id=2027691758, session=session_testing
+        )
+        assert created_order.current_step == 1
+        assert created_order.to_country is None
+        for index in range(0, len(Step)):
+            step = index + 1
+            order = db.get_order_data_by_user_id_impl(
+                user_id=2027691758, session=session_testing
+            )
+
+            if order:
+
+                prefix_name = mock_button_data_by_call[step]["prefix_name"]
+                value = mock_button_data_by_call[step]["value"]
+                field_name = mock_button_data_by_call[step]["field_name"]
+
+                object_call = create_fake_object_call(
+                    message=Message(content_type="text", text="", user_id=2027691758),
+                    data=create_callback_data_for_button(
+                        step=step,
+                        prefix_name=prefix_name,
+                        value=value,
+                    ),
+                )
+                updated_data = get_updated_data_from_current_step(
+                    call=object_call,
+                    order=order,
+                    prefix=prefix_name,
+                    field_name=field_name,
+                )
+
+                db.update_order_data_by_step_impl(
+                    session=session_testing, **updated_data
+                )
+                order_after_update = db.get_order_data_by_user_id_impl(
+                    user_id=2027691758, session=session_testing
+                )
+                next_step = order_after_update.current_step
+                if order_after_update:
+                    match next_step:
+                        case 2:
+                            assert order.to_country == "Москва"
+                            assert order.count_people is None
+                            assert order.count_days is None
+                            assert order.month is None
+                            assert order.price is None
+                            assert order.connection is None
+                            assert order.is_created_order is False
+                        case 3:
+                            assert order.to_country == "Москва"
+                            assert order.count_people == "4"
+                            assert order.count_days is None
+                            assert order.month is None
+                            assert order.price is None
+                            assert order.connection is None
+                            assert order.is_created_order is False
+                        case 4:
+                            assert order.to_country == "Москва"
+                            assert order.count_people == "4"
+                            assert order.count_days == "10"
+                            assert order.month is None
+                            assert order.price is None
+                            assert order.connection is None
+                            assert order.is_created_order is False
+                        case 5:
+                            assert order.to_country == "Москва"
+                            assert order.count_people == "4"
+                            assert order.count_days == "10"
+                            assert order.month == "Май"
+                            assert order.price is None
+                            assert order.connection is None
+                            assert order.is_created_order is False
+                        case 6:
+                            assert order.to_country == "Москва"
+                            assert order.count_people == "4"
+                            assert order.count_days == "10"
+                            assert order.month == "Май"
+                            assert order.price == "400 000р"
+                            assert (
+                                order.connection == "Telegram"
+                                if order.is_created_order is True
+                                else order.connection is None
+                            )
+                            assert (
+                                order.is_created_order is True
+                                if order.connection == "Telegram"
+                                else order.is_created_order is False
+                            )
+                else:
+                    raise Exception(
+                        'тест "test_create_order_from_start_to_finish" не прошел'
+                    )
+
+            else:
+                raise Exception(
+                    'тест "test_create_order_from_start_to_finish" не прошел'
+                )
