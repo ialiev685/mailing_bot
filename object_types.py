@@ -54,6 +54,7 @@ class OrderFieldsTypeModel(BaseModel):
     is_created_order: bool
     connection: Optional[str] = None
     phone: Optional[str] = None
+    is_send_order: bool
 
 
 FieldName = Literal[
@@ -67,4 +68,5 @@ FieldName = Literal[
     "is_created_order",
     "connection",
     "phone",
+    "is_send_order",
 ]

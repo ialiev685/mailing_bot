@@ -78,6 +78,7 @@ class OrderModel(BaseModel):
     connection: Mapped[str] = mapped_column(String, nullable=True)
     is_created_order: Mapped[bool] = mapped_column(default=False)
     phone: Mapped[str] = mapped_column(nullable=True)
+    is_send_order: Mapped[bool] = mapped_column(default=False)
 
     def __repr__(self):
         return f"OrderModel: user_id{self.user_id}, current_step={self.current_step}, to_country={self.to_country}, count_people={self.count_people}, count_days={self.count_days}, month={self.month}, price={self.price}, connection={self.connection}, is_created_order={self.is_created_order}, phone={self.phone}"
