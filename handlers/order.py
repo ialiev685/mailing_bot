@@ -17,6 +17,7 @@ from config import (
 from telebot import types
 import database.controllers as db
 from database.models import OrderModel
+from error_handlers import CreateOrderError
 from helpers import (
     check_valid_phone,
     create_fake_object_call,
@@ -56,12 +57,20 @@ def set_number_phone_after_create_order(message: types.Message):
 
     order = db.get_order_data_by_user_id(user_id=message.from_user.id)
 
-    if order and order.is_created_order and check_valid_phone(message.text):
-        update_data: dict[FieldName, Union[str, int, None]] = {
+    if order and order.is_created_order and order.is_send_order:
+        bot.send_message(
+            chat_id=message.chat.id,
+            text="✅ Заказ уже был отправлен ранее.",
+            parse_mode="Markdown",
+        )
+
+    elif order and order.is_created_order and check_valid_phone(message.text):
+        update_data: dict[FieldName, Union[str, int]] = {
             "user_id": message.from_user.id,
             "current_step": len(Step),
             "is_created_order": True,
             "phone": message.text,
+            "is_send_order": True,
         }
         order_updated = db.update_order_data_by_step(**update_data)
         bot.send_message(
@@ -177,12 +186,11 @@ def get_updated_data_from_current_step(
     if not call.data:
         return None
     current_step = get_step_number_from_button_data(call.data)
-
     if current_step and order.current_step == current_step:
+
         is_last_step = current_step == len(Step)
         next_step = current_step + 1 if current_step < len(Step) else current_step
         value = get_order_value_from_button_data(data=call.data, prefix=prefix)
-
         if value is None:
             return None
 
@@ -191,6 +199,7 @@ def get_updated_data_from_current_step(
             field_name: value,
             "current_step": next_step,
             "is_created_order": is_last_step,
+            "is_send_order": False,
         }
 
         return update_data
@@ -198,7 +207,6 @@ def get_updated_data_from_current_step(
 
 
 def handle_step(call: types.CallbackQuery, prefix: str, field_name: FieldName):
-
     if call.data:
         bot.answer_callback_query(callback_query_id=call.id)
         order = db.get_order_data_by_user_id(user_id=call.from_user.id)
@@ -207,7 +215,13 @@ def handle_step(call: types.CallbackQuery, prefix: str, field_name: FieldName):
         updated_data = get_updated_data_from_current_step(
             call=call, order=order, prefix=prefix, field_name=field_name
         )
-
+        if updated_data is None:
+            raise CreateOrderError(
+                message=f"Данные из кнопок под префиксом {prefix} пустые"
+            )
+        bot.delete_message(
+            chat_id=call.message.chat.id, message_id=call.message.message_id
+        )
         updated_order = db.update_order_data_by_step(**updated_data)
         create_button_menu_for_order_step(call=call, order=updated_order)
 

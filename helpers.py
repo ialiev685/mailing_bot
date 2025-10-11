@@ -225,12 +225,12 @@ def has_value_in_data_name(value: str) -> Callable:
     return callback
 
 
-def check_valid_phone(text: str):
+def check_valid_phone(text: str) -> bool:
     is_valid_phone = re.match(
         r"^(\+7|7|8)?[\s\-\(\)]*9\d{2}[\s\-\(\)]*\d{3}[\s\-\(\)]*\d{2}[\s\-\(\)]*\d{2}$",
         text,
     )
-    return is_valid_phone
+    return bool(is_valid_phone)
 
 
 def create_fake_object_call(message: types.Message, data: str):
