@@ -20,7 +20,7 @@ from handlers.order import (
     get_order_step_options_by_current_step,
     get_updated_data_from_current_step,
 )
-from helpers import create_fake_object_call
+from helpers import check_valid_phone, create_fake_object_call
 from tests.core_testing import *
 from typing import TypedDict
 
@@ -168,55 +168,60 @@ class TestOrder:
                 )
                 next_step = order_after_update.current_step
                 if order_after_update:
-                    match next_step:
-                        case 2:
-                            assert order.to_country == "Москва"
-                            assert order.count_people is None
-                            assert order.count_days is None
-                            assert order.month is None
-                            assert order.price is None
-                            assert order.connection is None
-                            assert order.is_created_order is False
-                        case 3:
-                            assert order.to_country == "Москва"
-                            assert order.count_people == "4"
-                            assert order.count_days is None
-                            assert order.month is None
-                            assert order.price is None
-                            assert order.connection is None
-                            assert order.is_created_order is False
-                        case 4:
-                            assert order.to_country == "Москва"
-                            assert order.count_people == "4"
-                            assert order.count_days == "10"
-                            assert order.month is None
-                            assert order.price is None
-                            assert order.connection is None
-                            assert order.is_created_order is False
-                        case 5:
-                            assert order.to_country == "Москва"
-                            assert order.count_people == "4"
-                            assert order.count_days == "10"
-                            assert order.month == "Май"
-                            assert order.price is None
-                            assert order.connection is None
-                            assert order.is_created_order is False
-                        case 6:
-                            assert order.to_country == "Москва"
-                            assert order.count_people == "4"
-                            assert order.count_days == "10"
-                            assert order.month == "Май"
-                            assert order.price == "400 000р"
-                            assert (
-                                order.connection == "Telegram"
-                                if order.is_created_order is True
-                                else order.connection is None
-                            )
-                            assert (
-                                order.is_created_order is True
-                                if order.connection == "Telegram"
-                                else order.is_created_order is False
-                            )
+
+                    if next_step == 2:
+                        assert order.to_country == "Москва"
+                        assert order.count_people is None
+                        assert order.count_days is None
+                        assert order.month is None
+                        assert order.price is None
+                        assert order.connection is None
+                        assert order.is_created_order is False
+                    elif next_step == 3:
+                        assert order.to_country == "Москва"
+                        assert order.count_people == "4"
+                        assert order.count_days is None
+                        assert order.month is None
+                        assert order.price is None
+                        assert order.connection is None
+                        assert order.is_created_order is False
+                    elif next_step == 4:
+                        assert order.to_country == "Москва"
+                        assert order.count_people == "4"
+                        assert order.count_days == "10"
+                        assert order.month is None
+                        assert order.price is None
+                        assert order.connection is None
+                        assert order.is_created_order is False
+                    elif next_step == 5:
+                        assert order.to_country == "Москва"
+                        assert order.count_people == "4"
+                        assert order.count_days == "10"
+                        assert order.month == "Май"
+                        assert order.price is None
+                        assert order.connection is None
+                        assert order.is_created_order is False
+                    elif next_step == 6:
+                        assert order.to_country == "Москва"
+                        assert order.count_people == "4"
+                        assert order.count_days == "10"
+                        assert order.month == "Май"
+                        assert order.price == "400 000р"
+                        assert (
+                            order.connection == "Telegram"
+                            if order.is_created_order is True
+                            else order.connection is None
+                        )
+                        assert (
+                            order.is_created_order is True
+                            if order.connection == "Telegram"
+                            else order.is_created_order is False
+                        )
+                    else:
+                        raise Exception(
+                            'тест "test_create_order_from_start_to_finish" не прошел'
+                        )
+
                 else:
                     raise Exception(
                         'тест "test_create_order_from_start_to_finish" не прошел'
@@ -226,3 +231,14 @@ class TestOrder:
                 raise Exception(
                     'тест "test_create_order_from_start_to_finish" не прошел'
                 )
+
+    def test_valid_phone_number(self):
+        phones_variants = [
+            "+79999999999",
+            "79999999999",
+            "89999999999",
+            "9234567890",
+        ]
+
+        for phone in phones_variants:
+            assert check_valid_phone(phone) is True
