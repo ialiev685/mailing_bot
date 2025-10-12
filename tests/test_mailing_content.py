@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 import database.controllers as db
 from telebot import types
 from tests.core_testing import *
-from helpers import get_formatted_content, create_media_group
+from helpers import find_data_link_from_text, get_formatted_content, create_media_group
 from tests.core_testing import *
 from tests.message_mock import Message
 from object_types import MailingPhotoContentTypeModel, MailingTextContentTypeModel
@@ -170,3 +170,13 @@ class TestMailingContent:
 
             else:
                 raise ValueError("тесты не прошли")
+
+    def test_find_data_link_from_text(self):
+        text = "За окном медленно падал снег, укутывая город в тишину. [https://chat.deepseek.com](пройти по ссылке)"
+        result = find_data_link_from_text(text)
+        if result:
+            url, name = result
+            assert url == "https://chat.deepseek.com"
+            assert name == "пройти по ссылке"
+        else:
+            raise ValueError("тесты не прошли")

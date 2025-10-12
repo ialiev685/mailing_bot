@@ -243,3 +243,14 @@ def create_fake_object_call(message: types.Message, data: str):
             self.from_user = message.from_user
 
     return FakeCall(message=message)
+
+
+def find_data_link_from_text(text: str) -> tuple[str, str] | None:
+    pattern = r"\[(.*?)\]\((.*?)\)"
+    result = re.search(pattern, text)
+
+    if result:
+        url = result.group(1)
+        name = result.group(2)
+        return (url, name)
+    return None
