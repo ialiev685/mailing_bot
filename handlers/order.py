@@ -113,7 +113,7 @@ def init_new_order(call: types.CallbackQuery):
 
 
 @bot.message_handler(commands=[CommandNames.order.value])
-@handler_error_decorator(func_name="handle_unsubscribe")
+@handler_error_decorator(func_name="handle_begin_create_order")
 def handle_begin_create_order(message: types.Message):
 
     fakeCall = create_fake_object_call(

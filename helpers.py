@@ -250,7 +250,14 @@ def find_data_link_from_text(text: str) -> tuple[str, str] | None:
     result = re.search(pattern, text)
 
     if result:
-        url = result.group(1)
+        content = result.group(1)
         name = result.group(2)
-        return (url, name)
+
+        if content.startswith("data="):
+            data_value = content[5:]
+            return (f"data={data_value}", name)
+        elif content.startswith("url="):
+            # Формат: [url=глобальная_ссылка](name)
+            url_value = content[4:]
+            return (f"url={url_value}", name)
     return None

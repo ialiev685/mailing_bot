@@ -171,12 +171,31 @@ class TestMailingContent:
             else:
                 raise ValueError("тесты не прошли")
 
-    def test_find_data_link_from_text(self):
-        text = "За окном медленно падал снег, укутывая город в тишину. [https://chat.deepseek.com](пройти по ссылке)"
+    def test_find_data_link_by_url_from_text(self):
+        text = "За окном медленно падал снег, укутывая город в тишину. [url=https://chat.deepseek.com](пройти по ссылке)"
         result = find_data_link_from_text(text)
         if result:
-            url, name = result
-            assert url == "https://chat.deepseek.com"
+            content, name = result
+            key, value = content.split("=")
+            assert key == "url"
+            assert value == "https://chat.deepseek.com"
             assert name == "пройти по ссылке"
         else:
             raise ValueError("тесты не прошли")
+
+    def test_find_data_link_by_data_from_text(self):
+        text = "За окном медленно падал снег, укутывая город в тишину. [data=order](подобрать тур)"
+        result = find_data_link_from_text(text)
+        if result:
+            content, name = result
+            key, value = content.split("=")
+            assert key == "data"
+            assert value == "order"
+            assert name == "подобрать тур"
+        else:
+            raise ValueError("тесты не прошли")
+
+    def test_find_data_link_by_none_from_text(self):
+        text = "За окном медленно падал снег, укутывая город в тишину. [data_=order](подобрать тур)"
+        result = find_data_link_from_text(text)
+        assert result is None
