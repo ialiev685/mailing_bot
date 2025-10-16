@@ -2,7 +2,12 @@ from sqlalchemy.orm import Session
 import database.controllers as db
 from telebot import types
 from tests.core_testing import *
-from helpers import find_data_link_from_text, get_formatted_content, create_media_group
+from helpers import (
+    find_data_link_from_text,
+    get_formatted_content,
+    create_media_group,
+    separate_text_and_button_data,
+)
 from tests.core_testing import *
 from tests.message_mock import Message
 from object_types import MailingPhotoContentTypeModel, MailingTextContentTypeModel
@@ -199,3 +204,16 @@ class TestMailingContent:
         text = "За окном медленно падал снег, укутывая город в тишину. [data_=order](подобрать тур)"
         result = find_data_link_from_text(text)
         assert result is None
+
+    def test_separate_text(self):
+        text = "За окном медленно падал снег, укутывая город в тишину. ###[data_=order](подобрать тур)"
+        result = separate_text_and_button_data(text)
+        content, button_data = result
+        assert isinstance(result, tuple)
+        assert content == "За окном медленно падал снег, укутывая город в тишину."
+        assert button_data == "[data_=order](подобрать тур)"
+
+        text = "За окном медленно падал снег, укутывая город в тишину. data_=order](подобрать тур)"
+        result = separate_text_and_button_data(text)
+        assert isinstance(result, str)
+        assert result == text

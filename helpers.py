@@ -226,11 +226,15 @@ def has_value_in_data_name(value: str) -> Callable:
 
 
 def check_valid_phone(text: str) -> bool:
-    is_valid_phone = re.match(
-        r"^(\+7|7|8)?[\s\-\(\)]*9\d{2}[\s\-\(\)]*\d{3}[\s\-\(\)]*\d{2}[\s\-\(\)]*\d{2}$",
-        text,
-    )
-    return bool(is_valid_phone)
+    cleaned = re.sub(r"[\s\-\(\)\+]", "", text)
+
+    # Проверяем российские номера
+    if re.match(r"^(7|8)?9\d{9}$", cleaned):
+        return True
+    # Проверяем международные номера (код страны 1-3 цифры, номер 4-15 цифр)
+    if re.match(r"^[1-9]\d{4,15}$", cleaned):
+        return True
+    return False
 
 
 def create_fake_object_call(message: types.Message, data: str):
@@ -261,3 +265,13 @@ def find_data_link_from_text(text: str) -> tuple[str, str] | None:
             url_value = content[4:]
             return (f"url={url_value}", name)
     return None
+
+
+def separate_text_and_button_data(text: str) -> tuple[str, str] | str:
+    separate_symbol = "###"
+    result = text.split(separate_symbol)
+    if isinstance(result, list) and len(result) == 2:
+        content, button_data = result
+        return (content.strip(), button_data)
+    else:
+        return text
