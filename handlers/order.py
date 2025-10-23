@@ -19,8 +19,9 @@ import database.controllers as db
 from database.models import OrderModel
 from error_handlers import CreateOrderError
 from helpers import (
+    FAKE_CALL_ID,
+    FakeCall,
     check_valid_phone,
-    create_fake_object_call,
     handler_error_decorator,
     has_value_in_data_name,
 )
@@ -115,11 +116,7 @@ def init_new_order(call: types.CallbackQuery):
 @bot.message_handler(commands=[CommandNames.order.value])
 @handler_error_decorator(func_name="handle_begin_create_order")
 def handle_begin_create_order(message: types.Message):
-
-    fakeCall = create_fake_object_call(
-        message=message, data=UsersCallbackData.create_order.value
-    )
-
+    fakeCall = FakeCall(message=message, data=UsersCallbackData.create_order.value)
     create_order(call=fakeCall)
 
 
@@ -162,12 +159,13 @@ def create_button_menu_for_order_step(call: types.CallbackQuery, order: OrderMod
 
 @bot.callback_query_handler(
     func=lambda call: call.data in [UsersCallbackData.create_order.value]
+    or call.data in [CommandNames.order.value]
 )
 @handler_error_decorator(func_name="create_order")
 def create_order(
     call: types.CallbackQuery,
 ):
-    if not isinstance(call.id, str):
+    if call.id != FAKE_CALL_ID:
         bot.answer_callback_query(callback_query_id=call.id)
 
     init_new_order(call=call)

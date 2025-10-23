@@ -20,7 +20,7 @@ from handlers.order import (
     get_order_step_options_by_current_step,
     get_updated_data_from_current_step,
 )
-from helpers import check_valid_phone, create_fake_object_call
+from helpers import FakeCall, check_valid_phone
 from tests.core_testing import *
 from typing import TypedDict
 
@@ -98,7 +98,7 @@ class TestOrder:
             user_id=2027691758, session=session_testing
         )
         if order:
-            object_call = create_fake_object_call(
+            object_call = FakeCall(
                 message=Message(content_type="text", text="", user_id=2027691758),
                 data=create_callback_data_for_button(
                     step=order.current_step,
@@ -145,7 +145,7 @@ class TestOrder:
                 value = mock_button_data_by_call[step]["value"]
                 field_name = mock_button_data_by_call[step]["field_name"]
 
-                object_call = create_fake_object_call(
+                object_call = FakeCall(
                     message=Message(content_type="text", text="", user_id=2027691758),
                     data=create_callback_data_for_button(
                         step=step,

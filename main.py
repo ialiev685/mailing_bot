@@ -11,7 +11,7 @@ from config import CommandNames, UsersCallbackData, USER_COMMANDS, BOT_NAME
 from object_types import RoleEnum
 
 
-from helpers import handler_error_decorator
+from helpers import FakeCall, handler_error_decorator
 
 import database.controllers as db
 from bot_core import bot
@@ -24,7 +24,7 @@ from bot_core import bot
 @handler_error_decorator(func_name="handle_info_about_us")
 def get_info_about_us(call: types.CallbackQuery):
 
-    if not isinstance(call.id, str):
+    if call.id != FAKE_CALL_ID:
         bot.answer_callback_query(callback_query_id=call.id)
 
     about_us_data = db.get_about_us_data()
@@ -47,14 +47,7 @@ def get_info_about_us(call: types.CallbackQuery):
 @handler_error_decorator(func_name="handle_info_about_us")
 def handle_info_about_us(message: types.Message):
     # имитация вызова кнопки
-    class FakeCall:
-        def __init__(self, message: types.Message):
-            self.id = "fake_call_id"
-            self.message = message
-            self.data = UsersCallbackData.about.value
-            self.from_user = message.from_user
-
-    fakeCall = FakeCall(message=message)
+    fakeCall = FakeCall(message=message, data=UsersCallbackData.about.value)
 
     get_info_about_us(call=fakeCall)
 
