@@ -2,6 +2,7 @@ import json
 import re
 from typing import TypedDict, Union, Callable, Type, Optional, Any
 from telebot import types
+from config import CHAT_ID_SUPPORT
 from error_handlers import LoadJsonError, UnknownContentType, ParseSortError
 from object_types import (
     MailingTextContentTypeModel,
@@ -15,6 +16,7 @@ from database.core import engine
 from sqlalchemy.orm import Session
 import error_handlers as error_instance
 import logging
+from bot_core import bot
 
 
 logger = logging.getLogger(__name__)
@@ -170,6 +172,31 @@ def session_decorator(errorInstance: Type[Exception], errorMessage: str):
     return decorator
 
 
+def send_error_message_to_support():
+    if not CHAT_ID_SUPPORT:
+        return
+
+    try:
+        with open("logs.log", "r", encoding="utf-8") as file:
+            lines = file.readlines()
+
+        if lines:
+            last_line = lines[-1].strip()  # Берем последнюю строку и убираем пробелы
+            print("last_line", last_line)
+            bot.send_message(
+                chat_id=int(CHAT_ID_SUPPORT), text=f"Возникла ошибка: {last_line}"
+            )
+        else:
+            bot.send_message(
+                chat_id=CHAT_ID_SUPPORT, text=f"Возникла ошибка: Файл пустой"
+            )
+
+    except FileNotFoundError:
+        bot.send_message(
+            chat_id=CHAT_ID_SUPPORT, text=f"Возникла ошибка: Файл не найден"
+        )
+
+
 def handler_error_decorator(
     callBack: Optional[Callable] = None,
     func_name: str = "unknown",
@@ -201,10 +228,12 @@ def handler_error_decorator(
                 if callBack is not None:
                     callBack(*args, **kwargs)
                 logger.error(error, extra={"func_name": func_name})
+                send_error_message_to_support()
             except Exception as error:
                 if callBack is not None:
                     callBack(*args, **kwargs)
                 logger.error(error, extra={"func_name": func_name})
+                send_error_message_to_support()
 
         return wrapper
 
