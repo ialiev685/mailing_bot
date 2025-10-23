@@ -15,7 +15,11 @@ from object_types import (
 
 
 from time import sleep
-from helpers import get_formatted_content, create_media_group
+from helpers import (
+    create_button_with_url_or_data_and_separate_content,
+    get_formatted_content,
+    create_media_group,
+)
 from helpers import handler_error_decorator
 from database.models import SubscriberModel
 import database.controllers as db
@@ -182,17 +186,26 @@ def send_content_to_chat_by_id(
 ):
     for key, content in content_group.items():
         if isinstance(content, MailingTextContentTypeModel):
+
+            formatted_text = content.text if content.text else ""
+            result = create_button_with_url_or_data_and_separate_content(formatted_text)
             bot.send_message(
                 chat_id=chat_id,
-                text=content.text if content.text else "",
+                text=result["cleared_text"],
                 parse_mode="Markdown",
+                reply_markup=result["button_object"],
             )
         elif isinstance(content, MailingPhotoContentTypeModel):
+            formatted_caption = content.caption if content.caption else ""
+            result = create_button_with_url_or_data_and_separate_content(
+                formatted_caption
+            )
             bot.send_photo(
                 chat_id=chat_id,
-                caption=content.caption,
+                caption=result["cleared_text"],
                 photo=content.file_id,
                 parse_mode="Markdown",
+                reply_markup=result["button_object"],
             )
 
         elif isinstance(content, list):

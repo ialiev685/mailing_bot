@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Union, Callable, Type, Optional, Any
+from typing import TypedDict, Union, Callable, Type, Optional, Any
 from telebot import types
 from error_handlers import LoadJsonError, UnknownContentType, ParseSortError
 from object_types import (
@@ -68,14 +68,14 @@ def get_formatted_content(
 
     if message.content_type == "text":
         return MailingTextContentTypeModel(content_type="text", text=message.text)
-    if message.content_type == "photo":
+    if message.content_type == "photo" and message.photo:
         return MailingPhotoContentTypeModel(
             content_type="photo",
             file_id=get_optimal_photo(message.photo).file_id,
             media_group_id=message.media_group_id,
             caption=message.caption,
         )
-    if message.content_type == "video":
+    if message.content_type == "video" and message.video:
 
         return MailingVideoContentTypeModel(
             content_type="video",
@@ -237,16 +237,16 @@ def check_valid_phone(text: str) -> bool:
     return False
 
 
-def create_fake_object_call(message: types.Message, data: str):
-    # имитация вызова кнопки
-    class FakeCall:
-        def __init__(self, message: types.Message):
-            self.id = "fake_call_id"
-            self.message = message
-            self.data = data
-            self.from_user = message.from_user
+FAKE_CALL_ID = "fake_call_id"
 
-    return FakeCall(message=message)
+
+# имитация вызова кнопки
+class FakeCall:
+    def __init__(self, message: types.Message, data: str):
+        self.id = FAKE_CALL_ID
+        self.message = message
+        self.data = data
+        self.from_user = message.from_user
 
 
 def find_data_link_from_text(text: str) -> tuple[str, str] | None:
@@ -275,3 +275,35 @@ def separate_text_and_button_data(text: str) -> tuple[str, str] | str:
         return (content.strip(), button_data)
     else:
         return text
+
+
+class ReturnButtonAndText(TypedDict):
+    button_object: types.InlineKeyboardMarkup | None
+    cleared_text: str
+
+
+def create_button_with_url_or_data_and_separate_content(
+    text: str,
+) -> ReturnButtonAndText:
+    return_separate = separate_text_and_button_data(text)
+    if isinstance(return_separate, str):
+        return {"cleared_text": return_separate, "button_object": None}
+
+    cleared_text, button_data = return_separate
+    result_button_content = find_data_link_from_text(button_data)
+
+    if not result_button_content:
+        return {"cleared_text": cleared_text, "button_object": None}
+
+    content, name = result_button_content
+    key, value = content.split("=")
+    print(key, value)
+    markup_object = types.InlineKeyboardMarkup()
+    link_button = types.InlineKeyboardButton(
+        text=name,
+        callback_data=value if key == "data" else None,
+        url=value if key == "url" else None,
+    )
+    markup_object.add(link_button)
+
+    return {"cleared_text": cleared_text, "button_object": markup_object}
