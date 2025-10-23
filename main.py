@@ -116,8 +116,10 @@ if __name__ == "__main__":
         try:
 
             init_logger_config()
-            bot.infinity_polling(restart_on_change=True)
-            # bot.infinity_polling()
+            # для разработки
+            # bot.infinity_polling(restart_on_change=True)
+            # для production
+            bot.infinity_polling()
 
         except Exception as error:
             print("error by start server:", error)
