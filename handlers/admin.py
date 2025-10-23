@@ -60,6 +60,7 @@ def set_content_about_us(call: types.CallbackQuery):
 def upload_content_about_us(message: types.Message):
     if (
         message.content_type == "photo"
+        and message.photo
         and message.from_user
         and is_admin(message.from_user.id)
     ):
