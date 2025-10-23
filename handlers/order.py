@@ -1,4 +1,4 @@
-from bot_core import bot
+from bot_core import bot, bot_sender
 from config import (
     PREFIX_CURRENT_STEP,
     PREFIX_COUNTRY,
@@ -94,7 +94,7 @@ def set_number_phone_after_create_order(message: types.Message):
             [f"<b>{key}</b>: {value}" for key, value in formatted_order.items()]
         )
 
-        bot.send_message(
+        bot_sender.send_message(
             chat_id=CHAT_ID_FOR_SEND_ORDER if CHAT_ID_FOR_SEND_ORDER else "",
             text=f"Вам заказ из телеграм-бота.\n\n{order_details}",
             parse_mode="HTML",
