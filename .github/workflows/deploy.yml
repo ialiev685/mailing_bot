@@ -31,7 +31,8 @@ jobs:
             cd /root/github/mailing_bot && \
             git pull origin main && \
             docker-compose down && \
-            docker-compose up -d --build 
+            docker-compose up -d --build
+            " 
             
       - name: Waiting up containers
         run: sleep 5
