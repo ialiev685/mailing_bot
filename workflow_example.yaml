@@ -1,6 +1,6 @@
+
+
 name: Deploy to VPS
-# событие экшена
-# on: workflow_dispatch -ручное
 on: 
   push:
     branches:
@@ -9,6 +9,27 @@ on:
     types:
       - opened
 jobs: 
+  test:
+    # на какой системе запускается ranner
+    runs-on: ubuntu-latest
+    steps:
+      # название шага
+      - name: Get repository code
+      # названия плагина для копирования проекта для последующего выполнения
+        uses: actions/checkout@v4
+      
+      # кэширование зависимостей чтобы в след задаче не повторять установку, а взять из кэша
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('**/requirements.txt') }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt 
+
+      - name: Test app
+        run: make test
   deploy:
     runs-on: ubuntu-latest
     # завистимость от шага deploy
@@ -39,5 +60,3 @@ jobs:
 
       - name: Test app
         run: sudo docker-compose exec app pytest -s
-
-  
