@@ -30,7 +30,7 @@ jobs:
         run: pip install -r requirements.txt 
 
       - name: Up container database postgresql
-        run: docker-compose up --build db
+        run: sudo docker-compose up --build db
 
       - name: Test app
         run: make test
