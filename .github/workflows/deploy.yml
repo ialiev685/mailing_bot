@@ -9,38 +9,30 @@ on:
     types:
       - opened
 jobs:
-# название задачи
-  test:
-    # на какой системе запускается ranner
-    runs-on: ubuntu-latest
-    steps:
-      # название шага
-      - name: Get repository code
-      # названия плагина для копирования проекта для последующего выполнения
-        uses: actions/checkout@v4
+  # название задачи
+  # test:
+  #   # на какой системе запускается ranner
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     # название шага
+  #     - name: Get repository code
+  #     # названия плагина для копирования проекта для последующего выполнения
+  #       uses: actions/checkout@v4
       
-      # кэширование зависимостей чтобы в след задаче не повторять установку, а взять из кэша
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: pip-${{ hashFiles('**/requirements.txt') }}
+  #     # кэширование зависимостей чтобы в след задаче не повторять установку, а взять из кэша
+  #     - name: Cache dependencies
+  #       uses: actions/cache@v3
+  #       with:
+  #         path: ~/.cache/pip
+  #         key: pip-${{ hashFiles('**/requirements.txt') }}
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt 
+  #     - name: Install dependencies
+  #       run: pip install -r requirements.txt 
 
-      - name: Install docker
-        uses: docker/setup-compose-action@v1
+  #     - name: Test app
+  #       run: make test
 
-      - name: Up container database postgresql
-        run: sudo docker-compose up --build db
-
-      - name: Test app
-        run: make test
-
-      - name: Stop docker
-        if: ${{ always() }}
-        run: docker-compose down
+  # название задачи
   deploy:
     runs-on: ubuntu-latest
     # завистимость от шага deploy
@@ -64,6 +56,12 @@ jobs:
             cd /root/github/mailing_bot && \
             git pull origin main && \
             docker-compose down && \
-            docker-compose up -d --build
+            docker-compose up -d --build 
+            
+      - name: Waiting up containers
+        run: sleep 5
+
+      - name: Test app
+        run: sudo docker-compose exec app pytest -s
 
   
