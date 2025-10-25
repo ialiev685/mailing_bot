@@ -26,27 +26,21 @@ jobs:
           path: ~/.cache/pip
           key: pip-${{ hashFiles('**/requirements.txt') }}
 
-      - name: Up containers and start test 
-        uses: adambirds/docker-compose-action@v1.5.0
-        with:
-          compose-file: "./docker-compose.yml"
-          up-flags: "--build"
-          test-container: "app"
-          test-command: "make test"
+      - name: Install dependencies
+        run: pip install -r requirements.txt 
 
+      - name: Install docker
+        uses: docker/setup-compose-action@v3
 
-      # - name: Install dependencies
-      #   run: pip install -r requirements.txt 
+      - name: Up container database postgresql
+        run: sudo docker-compose up --build db
 
-      # - name: Up container database postgresql
-      #   run: sudo docker-compose up --build db
+      - name: Test app
+        run: make test
 
-      # - name: Test app
-      #   run: make test
-
-      # - name: Stop docker
-      #   if: ${{ always() }}
-      #   run: docker-compose down
+      - name: Stop docker
+        if: ${{ always() }}
+        run: docker-compose down
   deploy:
     runs-on: ubuntu-latest
     # завистимость от шага deploy
