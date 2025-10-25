@@ -1,6 +1,5 @@
 import telebot
 from dotenv import load_dotenv
-import os
 from config import API_TOKEN, BOT_SENDER_ORDER_TOKEN
 
 load_dotenv(".env")
