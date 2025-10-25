@@ -11,8 +11,6 @@ on:
 jobs: 
   deploy:
     runs-on: ubuntu-latest
-    # завистимость от шага deploy
-    needs: test
     steps:
       - name: Get repository code
         uses: actions/checkout@v4
