@@ -1,8 +1,8 @@
 import logging
 
 from bot_core import bot
-from handlers.mailing import *
 from handlers.order import *
+from handlers.mailing import *
 from handlers.admin import *
 
 

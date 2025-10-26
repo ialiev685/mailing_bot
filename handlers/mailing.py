@@ -45,8 +45,7 @@ def send_message_about_mailing_error(*args):
             text="⚠️ Произошла ошибка при обработке сообщения. Запустите рассылку заново или обратитесь к администратору.",
             parse_mode="Markdown",
         )
-        db.update_flag_start_mailing(value=False)
-        db.remove_content()
+        set_value_about_start_mailing(value=False)
 
 
 def is_access_to_mailing(user_id: int, text: str | None = None) -> bool:
@@ -113,7 +112,8 @@ def handle_control_done_add_content(message: types.Message):
     content_types=["text"],
     func=lambda message: is_access_to_mailing(
         user_id=message.from_user.id, text=message.text
-    ),
+    )
+    and message.reply_to_message is None,
 )
 @handler_error_decorator(
     callBack=send_message_about_mailing_error, func_name="handle_text_messages"
