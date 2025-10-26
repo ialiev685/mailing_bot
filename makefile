@@ -1,6 +1,7 @@
+NAME ?= auto_migration
+
 migrate:
-	alembic revision --autogenerate -m "${NAME}"
-	alembic upgrade head
+	bash ./scripts/migrate.sh "${NAME}"
 
 start:
 	python main.py
