@@ -55,5 +55,5 @@ jobs:
       - name: Test app
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
-            docker-compose exec app pytest -s
+            docker-compose exec app make test
           "
