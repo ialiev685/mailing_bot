@@ -4,6 +4,12 @@ set -e  # Выход при ошибке
 
 MESSAGE="${1:-auto_migration}"
 
+# Проверяем и создаем папку versions
+if [ ! -d "alembic/versions" ]; then
+    echo "📁 Creating alembic/versions directory..."
+    mkdir -p alembic/versions
+fi
+
 if alembic check; then
     echo "✅ No migration"
     exit 0
