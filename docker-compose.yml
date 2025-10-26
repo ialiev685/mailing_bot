@@ -12,6 +12,7 @@ services:
       POSTGRES_HOST_TESTING: db_testing
     depends_on:
       - db
+      - db_testing
     volumes:
       - .:/app
     ports:
