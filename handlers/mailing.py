@@ -108,13 +108,6 @@ def handle_control_done_add_content(message: types.Message):
         confirm_mailing(chat_id=message.chat.id)
 
 
-@bot.message_handler(
-    content_types=["text"],
-    func=lambda message: is_access_to_mailing(
-        user_id=message.from_user.id, text=message.text
-    )
-    and message.reply_to_message is None,
-)
 @handler_error_decorator(
     callBack=send_message_about_mailing_error, func_name="handle_text_messages"
 )

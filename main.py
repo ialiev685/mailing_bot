@@ -60,7 +60,7 @@ def create_shared_menu() -> types.InlineKeyboardMarkup:
     button_link_to_site = types.InlineKeyboardButton(
         text="✍️ Cвое предложение",
         callback_data=UsersCallbackData.link_to_site.value,
-        url="https://www.all-inc-travel-online.ru",
+        url="https://www.all-inc-travel-online.ru/form",
     )
     button_about = types.InlineKeyboardButton(
         text="💬 О нас", callback_data=UsersCallbackData.about.value
