@@ -39,9 +39,7 @@ jobs:
 
       - name: Make migrate
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
-            docker-compose exec app make migrate
-          "
+          "cd /root/github/mailing_bot && docker-compose exec app make migrate"
 
   test:
     runs-on: ubuntu-latest
