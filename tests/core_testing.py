@@ -15,15 +15,14 @@ load_dotenv(".env")
 DB_USER = os.getenv("POSTGRES_USER")
 DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 DB_NAME = os.getenv("POSTGRES_DB")
-POSTGRES_HOST_TESTING = os.getenv("POSTGRES_HOST_TESTING")
+POSTGRES_HOST_TESTING = os.getenv("POSTGRES_HOST_TESTING", "localhost")
 DB_PORT = os.getenv("POSTGRES_PORT")
 DB_PORT_TESTING = os.getenv("POSTGRES_PORT_TESTING")
 DB_NAME_TESTING = os.getenv("POSTGRES_DB_TESTING")
 
 # Так запуска app в образке docker, обращение идет через внутренний port (внешний:внутренний)
-PORT = DB_PORT_TESTING if POSTGRES_HOST_TESTING == "localhost" else DB_PORT
-
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{POSTGRES_HOST_TESTING}:{PORT}/{DB_NAME_TESTING}"
+PORT = 5433 if POSTGRES_HOST_TESTING == "localhost" else DB_PORT
+DATABASE_URL = f"postgresql://test:test@{POSTGRES_HOST_TESTING}:{PORT}/test"
 
 
 @pytest.fixture
