@@ -35,6 +35,15 @@ from object_types import FieldName
 text_waiting_after_create_order = "Напишите в ответ на данное сообщение свой номер телефона, чтобы мы могли с вами связаться."
 
 
+def is_response_to_phone_message(message: types.Message) -> bool:
+    return bool(
+        message.reply_to_message
+        and message.reply_to_message.from_user
+        and message.reply_to_message.from_user.is_bot
+        and message.reply_to_message.text == text_waiting_after_create_order
+    )
+
+
 def get_step_number_from_button_data(data: str) -> int | None:
     response_by_step = re.search(r"{}(\d+)$".format(PREFIX_CURRENT_STEP), data)
     return int(response_by_step.group(1)) if response_by_step else None
@@ -45,12 +54,6 @@ def get_order_value_from_button_data(data: str, prefix: str) -> str | None:
     return response_by_country.group(1) if response_by_country else None
 
 
-@bot.message_handler(
-    content_types=["text"],
-    func=lambda message: message.reply_to_message is not None
-    and message.reply_to_message.from_user.is_bot
-    and message.reply_to_message.text == text_waiting_after_create_order,
-)
 @handler_error_decorator(func_name="set_number_phone_after_create_order")
 def set_number_phone_after_create_order(message: types.Message):
     if not message.from_user or not message.text:

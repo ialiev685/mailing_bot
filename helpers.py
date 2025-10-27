@@ -182,7 +182,6 @@ def send_error_message_to_support():
 
         if lines:
             last_line = lines[-1].strip()  # Берем последнюю строку и убираем пробелы
-            print("last_line", last_line)
             bot.send_message(
                 chat_id=int(CHAT_ID_SUPPORT), text=f"Возникла ошибка: {last_line}"
             )
@@ -326,7 +325,7 @@ def create_button_with_url_or_data_and_separate_content(
 
     content, name = result_button_content
     key, value = content.split("=")
-    print(key, value)
+
     markup_object = types.InlineKeyboardMarkup()
     link_button = types.InlineKeyboardButton(
         text=name,

@@ -1,18 +1,13 @@
 import logging
-
 from bot_core import bot
 from handlers.order import *
 from handlers.mailing import *
+from handlers.route_by_text_type import *
 from handlers.admin import *
-
-
 from telebot import types
 from config import CommandNames, UsersCallbackData, USER_COMMANDS, BOT_NAME
 from object_types import RoleEnum
-
-
 from helpers import FakeCall, handler_error_decorator
-
 import database.controllers as db
 from bot_core import bot
 

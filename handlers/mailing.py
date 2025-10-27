@@ -2,7 +2,6 @@ from typing import Union
 from telebot import types
 from config import (
     CommandNames,
-    BOT_COMMANDS,
     is_admin,
     AdminCallbackData,
 )
@@ -48,13 +47,11 @@ def send_message_about_mailing_error(*args):
         set_value_about_start_mailing(value=False)
 
 
-def is_access_to_mailing(user_id: int, text: str | None = None) -> bool:
+def is_access_to_mailing(user_id: int) -> bool:
     start_mailing_data = db.get_start_mailing_data()
-    if text and text in BOT_COMMANDS:
-        return False
-    if not is_admin(user_id=user_id) or start_mailing_data.value is not True:
-        return False
-    return True
+    if is_admin(user_id=user_id) and start_mailing_data.value is True:
+        return True
+    return False
 
 
 @bot.message_handler(commands=[CommandNames.stop.value])
@@ -125,9 +122,7 @@ def handle_text_messages(message: types.Message):
 
 @bot.message_handler(
     content_types=["photo", "video"],
-    func=lambda message: is_access_to_mailing(
-        user_id=message.from_user.id, text=message.text
-    ),
+    func=lambda message: is_access_to_mailing(user_id=message.from_user.id),
 )
 @handler_error_decorator(
     callBack=send_message_about_mailing_error, func_name="handle_media_messages"
