@@ -59,8 +59,8 @@ jobs:
         pip install -r requirements.txt
 
     - name: Test app
-      env:
-        POSTGRES_HOST_TESTING: localhost
+      # env:
+        # POSTGRES_PORT: 5432
       run: |
         python -m pytest -s
       
