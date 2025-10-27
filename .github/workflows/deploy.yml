@@ -54,12 +54,16 @@ jobs:
     #       # up-flags: --build db_testing
 
     - name: Install dependencies
+      
       run: |
         pip install -r requirements.txt
 
     - name: Test app
+      env:
+        POSTGRES_HOST_TESTING: localhost
       run: |
         python -m pytest -s
+      
 
   deploy:
     runs-on: ubuntu-latest
