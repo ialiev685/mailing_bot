@@ -63,7 +63,7 @@ jobs:
         BOT_SENDER_ORDER_TOKEN: test
 
       run: |
-        python -m pytest -s
+        pytest -s
       
 
   deploy:
