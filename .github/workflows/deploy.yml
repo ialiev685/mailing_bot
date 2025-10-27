@@ -10,23 +10,35 @@ on:
       - opened
 jobs: 
   test:
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+          APP_PORT: 3008
+          POSTGRES_PORT: 5433 
+        ports:
+          - 5433:5432
+
     runs-on: ubuntu-latest
     steps:
     - name: Get repository code
       uses: actions/checkout@v4
 
-    - name: Login to Docker Hub
-      run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+    # - name: Login to Docker Hub
+    #   run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-    - name: create .env file
-      run: |
-        cat > .env << EOF
-        APP_PORT=3008
-        POSTGRES_USER=test
-        POSTGRES_PASSWORD=test
-        POSTGRES_DB=test
-        POSTGRES_PORT=5433
-        EOF
+    # - name: create .env file
+    #   run: |
+    #     cat > .env << EOF
+    #     APP_PORT=3008
+    #     POSTGRES_USER=test
+    #     POSTGRES_PASSWORD=test
+    #     POSTGRES_DB=test
+    #     POSTGRES_PORT=5433
+    #     EOF
 
     - name: Run docker compose
       uses: hoverkraft-tech/compose-action@3846bcd61da338e9eaaf83e7ed0234a12b099b72 # v2.4.1
@@ -38,7 +50,7 @@ jobs:
         POSTGRES_PORT: 5433 
       with:
           compose-file: "./docker-compose.yml"
-          # services: db_testing
+          services: app
           # up-flags: --build db_testing
 
     - name: Waiting up containers
