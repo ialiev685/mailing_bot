@@ -19,12 +19,14 @@ jobs:
       uses: hoverkraft-tech/compose-action@3846bcd61da338e9eaaf83e7ed0234a12b099b72 # v2.4.1
       with:
           compose-file: "./docker-compose.yml"
+          services: db_testing
 
     - name: Test app
       run: python pytest -s
 
   deploy:
     runs-on: ubuntu-latest
+    needs: test
     steps:
       - name: Get repository code
         uses: actions/checkout@v4
