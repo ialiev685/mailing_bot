@@ -58,6 +58,10 @@ jobs:
         pip install -r requirements.txt
 
     - name: Test app
+      env:
+        BOT_TOKEN: test
+        BOT_SENDER_ORDER_TOKEN: test
+
       run: |
         python -m pytest -s
       
