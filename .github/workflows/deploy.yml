@@ -15,6 +15,16 @@ jobs:
     - name: Get repository code
       uses: actions/checkout@v4
 
+    - name: create .env file
+      run: |
+        cat << EOF > .env
+        APP_PORT=3008
+        POSTGRES_USER=test
+        POSTGRES_PASSWORD=test
+        POSTGRES_DB=test
+        POSTGRES_PORT=5433
+        EOF
+
     - name: Run docker compose
       uses: hoverkraft-tech/compose-action@3846bcd61da338e9eaaf83e7ed0234a12b099b72 # v2.4.1
       env:
