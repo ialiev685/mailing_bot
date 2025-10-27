@@ -17,7 +17,7 @@ jobs:
 
     - name: create .env file
       run: |
-        cat << EOF > .env
+        cat > .env << EOF
         APP_PORT=3008
         POSTGRES_USER=test
         POSTGRES_PASSWORD=test
