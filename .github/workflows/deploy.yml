@@ -15,6 +15,9 @@ jobs:
     - name: Get repository code
       uses: actions/checkout@v4
 
+    - name: Login to Docker Hub
+      run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
     - name: create .env file
       run: |
         cat > .env << EOF
