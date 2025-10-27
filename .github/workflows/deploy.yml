@@ -40,25 +40,26 @@ jobs:
     #     POSTGRES_PORT=5433
     #     EOF
 
-    - name: Run docker compose
-      uses: hoverkraft-tech/compose-action@3846bcd61da338e9eaaf83e7ed0234a12b099b72 # v2.4.1
-      env:
-        POSTGRES_USER: test
-        POSTGRES_PASSWORD: test
-        POSTGRES_DB: test
-        APP_PORT: 3008
-        POSTGRES_PORT: 5433 
-      with:
-          compose-file: "./docker-compose.yml"
-          services: app
-          # up-flags: --build db_testing
+    # - name: Run docker compose
+    #   uses: hoverkraft-tech/compose-action@3846bcd61da338e9eaaf83e7ed0234a12b099b72 # v2.4.1
+    #   env:
+    #     POSTGRES_USER: test
+    #     POSTGRES_PASSWORD: test
+    #     POSTGRES_DB: test
+    #     APP_PORT: 3008
+    #     POSTGRES_PORT: 5433 
+    #   with:
+    #       compose-file: "./docker-compose.yml"
+    #       services: app
+    #       # up-flags: --build db_testing
 
-    - name: Waiting up containers
-      run: sleep 5
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
 
     - name: Test app
       run: |
-          docker compose exec app make test
+        python -m pytest -s
 
   deploy:
     runs-on: ubuntu-latest
