@@ -11,10 +11,12 @@ ADMIN_ID = os.getenv("ADMIN_ID", None)
 BOT_NAME = os.getenv("BOT_NAME", None)
 CHAT_ID_SUPPORT = os.getenv("CHAT_ID_SUPPORT", None)
 FORMATTED_ADMIN_IDS = ADMIN_ID.split(",") if ADMIN_ID else []
-API_TOKEN = os.getenv("BOT_TOKEN", None)
+API_TOKEN = os.getenv("BOT_TOKEN", "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz")
 
 CHAT_ID_FOR_SEND_ORDER = os.getenv("CHAT_ID_FOR_SEND_ORDER", None)
-BOT_SENDER_ORDER_TOKEN = os.getenv("BOT_SENDER_ORDER_TOKEN")
+BOT_SENDER_ORDER_TOKEN = os.getenv(
+    "BOT_SENDER_ORDER_TOKEN", "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
+)
 
 
 class CommandNames(Enum):
