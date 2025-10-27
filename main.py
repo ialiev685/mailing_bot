@@ -14,7 +14,6 @@ from bot_core import bot
 
 @bot.callback_query_handler(
     func=lambda call: call.data == UsersCallbackData.about.value
-    and is_admin(user_id=call.from_user.id),
 )
 @handler_error_decorator(func_name="handle_info_about_us")
 def get_info_about_us(call: types.CallbackQuery):
