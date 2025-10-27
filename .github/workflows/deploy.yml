@@ -25,11 +25,15 @@ jobs:
         POSTGRES_PORT: 5433 
       with:
           compose-file: "./docker-compose.yml"
-          services: db_testing
+          # services: db_testing
           # up-flags: --build db_testing
 
+    - name: Waiting up containers
+      run: sleep 5
+
     - name: Test app
-      run: pytest -s
+      run: |
+          docker compose exec app make test
 
   deploy:
     runs-on: ubuntu-latest
