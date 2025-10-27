@@ -29,7 +29,7 @@ jobs:
           # up-flags: --build db_testing
 
     - name: Test app
-      run: python pytest -s
+      run: pytest -s
 
   deploy:
     runs-on: ubuntu-latest
