@@ -17,8 +17,6 @@ jobs:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
           POSTGRES_DB: test
-          # APP_PORT: 3008
-          # POSTGRES_PORT: 5433 
         ports:
           - 5433:5432
 
@@ -26,32 +24,6 @@ jobs:
     steps:
     - name: Get repository code
       uses: actions/checkout@v4
-
-    # - name: Login to Docker Hub
-    #   run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-
-    # - name: create .env file
-    #   run: |
-    #     cat > .env << EOF
-    #     APP_PORT=3008
-    #     POSTGRES_USER=test
-    #     POSTGRES_PASSWORD=test
-    #     POSTGRES_DB=test
-    #     POSTGRES_PORT=5433
-    #     EOF
-
-    # - name: Run docker compose
-    #   uses: hoverkraft-tech/compose-action@3846bcd61da338e9eaaf83e7ed0234a12b099b72 # v2.4.1
-    #   env:
-    #     POSTGRES_USER: test
-    #     POSTGRES_PASSWORD: test
-    #     POSTGRES_DB: test
-    #     APP_PORT: 3008
-    #     POSTGRES_PORT: 5433 
-    #   with:
-    #       compose-file: "./docker-compose.yml"
-    #       services: app
-    #       # up-flags: --build db_testing
 
     - name: Install dependencies
       run: |
@@ -99,17 +71,4 @@ jobs:
            cd /root/github/mailing_bot && docker-compose exec -T app make migrate
           "
 
-  # test:
-  #   runs-on: ubuntu-latest
-  #   needs: deploy
-  #   steps:
-  #     - name: Setup SSH
-  #       uses: webfactory/ssh-agent@v0.9.0
-  #       with:
-  #         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-  #     - name: Test app
-  #       run: |
-  #         ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
-  #           cd /root/github/mailing_bot && docker-compose exec -T app make test
-  #         "
+ 
