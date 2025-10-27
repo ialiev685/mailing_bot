@@ -24,6 +24,7 @@ class CommandNames(Enum):
     done = "done"
     admin = "admin"
     order = "order"
+    self_tour = "self_tour"
 
 
 BOT_COMMANDS = {f"/{cmd.value}" for cmd in CommandNames}
@@ -31,6 +32,7 @@ BOT_COMMANDS = {f"/{cmd.value}" for cmd in CommandNames}
 
 USER_COMMANDS = [
     types.BotCommand(CommandNames.order.value, "Подобрать тур"),
+    types.BotCommand(CommandNames.self_tour.value, "Свой тур"),
     types.BotCommand(CommandNames.about.value, "О нас"),
     types.BotCommand(CommandNames.stop.value, "Отписаться"),
 ]

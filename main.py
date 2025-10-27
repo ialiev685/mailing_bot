@@ -52,7 +52,7 @@ def create_shared_menu() -> types.InlineKeyboardMarkup:
         text="✈️ Подобрать тур", callback_data=UsersCallbackData.create_order.value
     )
     button_link_to_site = types.InlineKeyboardButton(
-        text="✍️ Cвое предложение",
+        text="✍️ Cвой тур",
         callback_data=UsersCallbackData.link_to_site.value,
         url="https://www.all-inc-travel-online.ru/form",
     )
@@ -92,6 +92,19 @@ def handle_subscribe(message: types.Message):
     bot.send_message(
         chat_id=message.chat.id,
         text=f"Добрый день 👋, {message.from_user.first_name}. \n\nМеня завут {BOT_NAME}. Я являюсь менеджером турагенства 'Ол Инклюзив' и помогу Вам организовать ваш лучший отдых. \n\n Выберите подходящий пукт меню чтобы подобрать тур",
+        parse_mode="Markdown",
+        reply_markup=markup_object,
+    )
+
+
+@bot.message_handler(commands=[CommandNames.self_tour.value])
+@handler_error_decorator(func_name="handle_self_tour")
+def handle_self_tour(message: types.Message):
+    bot.set_my_commands(commands=USER_COMMANDS)
+    markup_object = create_shared_menu()
+    bot.send_message(
+        chat_id=message.chat.id,
+        text="Выберите действие:",
         parse_mode="Markdown",
         reply_markup=markup_object,
     )
