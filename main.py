@@ -2,10 +2,10 @@ import logging
 from bot_core import bot
 from handlers.order import *
 from handlers.mailing import *
-from handlers.route_by_text_type import *
 from handlers.admin import *
+from handlers.route_by_text_type import *
 from telebot import types
-from config import CommandNames, UsersCallbackData, USER_COMMANDS, BOT_NAME
+from config import STAND, CommandNames, UsersCallbackData, USER_COMMANDS, BOT_NAME
 from object_types import RoleEnum
 from helpers import FakeCall, handler_error_decorator
 import database.controllers as db
@@ -123,10 +123,12 @@ if __name__ == "__main__":
         try:
 
             init_logger_config()
-            # для разработки
-            # bot.infinity_polling(restart_on_change=True)
-            # для production
-            bot.infinity_polling()
+            if STAND == "DEV":
+                # для разработки
+                bot.infinity_polling(restart_on_change=True)
+            else:
+                # для production
+                bot.infinity_polling()
 
         except Exception as error:
             print("error by start server:", error)

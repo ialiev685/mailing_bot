@@ -12,6 +12,7 @@ BOT_NAME = os.getenv("BOT_NAME", None)
 CHAT_ID_SUPPORT = os.getenv("CHAT_ID_SUPPORT", None)
 FORMATTED_ADMIN_IDS = ADMIN_ID.split(",") if ADMIN_ID else []
 API_TOKEN = os.getenv("BOT_TOKEN", None)
+STAND = os.getenv("STAND", "PROD")
 
 CHAT_ID_FOR_SEND_ORDER = os.getenv("CHAT_ID_FOR_SEND_ORDER", None)
 BOT_SENDER_ORDER_TOKEN = os.getenv("BOT_SENDER_ORDER_TOKEN")
