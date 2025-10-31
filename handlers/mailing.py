@@ -49,7 +49,7 @@ def send_message_about_mailing_error(*args):
 
 def is_access_to_mailing(user_id: int) -> bool:
     start_mailing_data = db.get_start_mailing_data()
-    if is_admin(user_id=user_id) and start_mailing_data.value is True:
+    if is_admin(user_id=user_id) and start_mailing_data.value:
         return True
     return False
 

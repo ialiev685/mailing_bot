@@ -137,15 +137,12 @@ def confirm_upload_about_us_content(call: types.CallbackQuery):
 
 
 # Меню
-
-
 @bot.message_handler(
     commands=[CommandNames.admin.value],
     func=lambda message: is_admin(message.from_user.id),
 )
 @handler_error_decorator(func_name="handle_call_admin_panel")
 def handle_call_admin_panel(message: types.Message):
-
     markup_object = types.InlineKeyboardMarkup()
     button_start_mailing = types.InlineKeyboardButton(
         text="📨 Начать рассылку", callback_data=AdminCallbackData.start_mailing.value
