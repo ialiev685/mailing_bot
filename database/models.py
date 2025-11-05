@@ -65,6 +65,9 @@ class StartMailingModel(BaseModel):
     name: Mapped[str] = mapped_column(primary_key=True)
     value: Mapped[bool] = mapped_column(default=False)
 
+    def __repr__(self):
+        return f"StartMailingModel: id{self.name}, content={self.value}"
+
 
 class OrderModel(BaseModel):
     __tablename__ = "create_order"
