@@ -18,6 +18,10 @@ CHAT_ID_FOR_SEND_ORDER = os.getenv("CHAT_ID_FOR_SEND_ORDER", None)
 BOT_SENDER_ORDER_TOKEN = os.getenv("BOT_SENDER_ORDER_TOKEN")
 
 
+def get_greeting(first_name: str) -> str:
+    return f"Добрый день 👋, {first_name}. \n\nМеня зовут {BOT_NAME}. Я являюсь менеджером турагенства 'Ол Инклюзив' и помогу Вам организовать ваш лучший отдых. \n\n Выберите подходящий пункт меню чтобы подобрать тур"
+
+
 class CommandNames(Enum):
     start = "start"
     about = "about"
