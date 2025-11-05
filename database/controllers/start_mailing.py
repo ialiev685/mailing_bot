@@ -10,35 +10,23 @@ FLAG_NAME = "start_mailing"
 
 
 @session_decorator(
-    StartMailingError, "Ошибка при инициации флага в БД о состоянии рассылки: "
-)
-def init_flag_start_mailing(session: Session):
-    return init_flag_start_mailing_impl(session=session)
-
-
-def init_flag_start_mailing_impl(session: Session):
-    mailing_content = get_start_mailing_data_impl(session=session)
-    if mailing_content is None:
-        start_mailing = StartMailingModel(name=FLAG_NAME)
-        session.add(start_mailing)
-        session.commit()
-
-
-@session_decorator(
     StartMailingError, "Ошибка при изменении флага в БД о начале рассылки: "
 )
 def update_flag_start_mailing(value: bool, session: Session):
     return update_flag_start_mailing_impl(value=value, session=session)
 
 
-def update_flag_start_mailing_impl(value: bool, session: Session):
+def update_flag_start_mailing_impl(value: bool, session: Session) -> StartMailingModel:
     response = select(StartMailingModel).where(StartMailingModel.name == FLAG_NAME)
     mailing_content = session.scalar(response)
 
     if mailing_content:
         mailing_content.value = value
-        session.commit()
-        return mailing_content
+    else:
+        mailing_content = StartMailingModel(name=FLAG_NAME, value=value)
+        session.add(mailing_content)
+
+    session.commit()
     return mailing_content
 
 
