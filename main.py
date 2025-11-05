@@ -5,7 +5,14 @@ from handlers.mailing import *
 from handlers.admin import *
 from handlers.route_by_text_type import *
 from telebot import types
-from config import STAND, CommandNames, UsersCallbackData, USER_COMMANDS, BOT_NAME
+from config import (
+    STAND,
+    CommandNames,
+    UsersCallbackData,
+    USER_COMMANDS,
+    BOT_NAME,
+    get_greeting,
+)
 from object_types import RoleEnum
 from helpers import FakeCall, handler_error_decorator
 import database.controllers as db
@@ -91,7 +98,7 @@ def handle_subscribe(message: types.Message):
 
     bot.send_message(
         chat_id=message.chat.id,
-        text=f"Добрый день 👋, {message.from_user.first_name}. \n\nМеня зовут {BOT_NAME}. Я являюсь менеджером турагенства 'Ол Инклюзив' и помогу Вам организовать ваш лучший отдых. \n\n Выберите подходящий пункт меню чтобы подобрать тур",
+        text=get_greeting(message.from_user.first_name),
         parse_mode="Markdown",
         reply_markup=markup_object,
     )

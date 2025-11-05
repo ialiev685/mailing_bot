@@ -104,10 +104,13 @@ def set_number_phone_after_create_order(message: types.Message):
         )
 
     else:
-        bot.send_message(
+        send_message = bot.send_message(
             chat_id=message.chat.id,
             text="❌ Номер не валиден, попробуйте снова ввести номер",
             parse_mode="Markdown",
+        )
+        bot.register_next_step_handler(
+            message=send_message, callback=set_number_phone_after_create_order
         )
 
 
@@ -153,10 +156,13 @@ def create_button_menu_for_order_step(call: types.CallbackQuery, order: OrderMod
             )
 
     elif order.is_created_order is True:
-        bot.send_message(
+        message = bot.send_message(
             chat_id=call.message.chat.id,
             text=text_waiting_after_create_order,
             parse_mode="Markdown",
+        )
+        bot.register_next_step_handler(
+            message=message, callback=set_number_phone_after_create_order
         )
 
 

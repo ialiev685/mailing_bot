@@ -1,7 +1,5 @@
 from sqlalchemy.orm import Session
 import database.controllers as db
-from telebot import types
-from tests.core_testing import *
 from helpers import (
     find_data_link_from_text,
     get_formatted_content,
