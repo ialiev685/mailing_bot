@@ -1,42 +1,43 @@
 version: "3.0"
 
 services:
-  app:
+  app_dev:
     build:
       context: .
       dockerfile: Dockerfile
-    env_file: .env
+    env_file: .env.dev
     environment:
-      # для prod окружения
-      POSTGRES_HOST: db
-      POSTGRES_HOST_TESTING: db_testing
+      # переиспользуем если приложение запускается с контенера
+      STAND: DEV 
+      POSTGRES_HOST: db_dev
+      POSTGRES_HOST_TESTING: db_testing_dev
     depends_on:
-      - db
-      - db_testing
+      - db_dev
+      - db_testing_dev
     volumes:
       - .:/app
     ports:
       - "${APP_PORT}:${APP_PORT}"
 
-  db:
+  db_dev:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_dev:/var/lib/postgresql/data
     ports:
-      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+      - "${POSTGRES_PORT}:5432"
 
-  db_testing:
+  db_testing_dev:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
       POSTGRES_DB: test
     ports:
-      - "5433:5432"
+      - "5435:5432"
 
 volumes:
-  postgres_data: {}
+  postgres_data_dev: {}
