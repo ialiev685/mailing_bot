@@ -6,11 +6,11 @@ from enum import Enum
 import os
 
 
-stand = os.getenv("STAND", "DEV").upper()
+STAND = os.getenv("STAND", "DEV").upper()
 
 
 def init_env_file():
-    if stand == "DEV":
+    if STAND == "DEV":
         load_dotenv(".env.dev")
     else:
         load_dotenv(".env.prod")
@@ -24,7 +24,6 @@ BOT_NAME = os.getenv("BOT_NAME", None)
 CHAT_ID_SUPPORT = os.getenv("CHAT_ID_SUPPORT", None)
 FORMATTED_ADMIN_IDS = ADMIN_ID.split(",") if ADMIN_ID else []
 API_TOKEN = os.getenv("BOT_TOKEN", None)
-STAND = os.getenv("STAND", "DEV")
 
 CHAT_ID_FOR_SEND_ORDER = os.getenv("CHAT_ID_FOR_SEND_ORDER", None)
 BOT_SENDER_ORDER_TOKEN = os.getenv("BOT_SENDER_ORDER_TOKEN")

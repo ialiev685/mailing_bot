@@ -3,15 +3,16 @@ import pytest
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from config import init_env_file
+from config import init_env_file, STAND
 from database.models import BaseModel
 
 init_env_file()
 
 POSTGRES_HOST_TESTING = os.getenv("POSTGRES_HOST_TESTING", "localhost")
+EXTERNAL_PORT = 5435 if STAND == "DEV" else 5433
 
 # Так запуска app в образке docker, обращение идет через внутренний port (внешний:внутренний)
-PORT = 5435 if POSTGRES_HOST_TESTING == "localhost" else 5432
+PORT = EXTERNAL_PORT if POSTGRES_HOST_TESTING == "localhost" else 5432
 DATABASE_URL = f"postgresql://test:test@{POSTGRES_HOST_TESTING}:{PORT}/test"
 
 

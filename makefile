@@ -14,7 +14,13 @@ test:
 	pytest -s
 
 build-dev:
-	docker-compose -f docker-compose.dev.yml --env-file .env.dev up -d --build
+	sudo docker-compose -f docker-compose-dev.yml --env-file .env.dev up -d --build
 
 build-prod:
-	docker-compose -f docker-compose.prod.yml up -d --build
+	docker-compose -f docker-compose-prod.yml --env-file .env.prod up -d --build
+
+stop-dev:
+	sudo docker-compose -f docker-compose-dev.yml --env-file .env.dev down
+
+stop-prod:
+	docker-compose -f docker-compose-prod.yml --env-file .env.prod down
