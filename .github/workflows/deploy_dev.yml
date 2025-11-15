@@ -30,7 +30,7 @@ jobs:
     permissions:
       contents: read      # Чтобы скачать код
       packages: write     # Чтобы пушить Docker образ в GHCR
-      
+
     steps:
     - name: Get repository code
       uses: actions/checkout@v4
@@ -49,6 +49,11 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build and push
+      uses: docker/build-push-action@v6
+      with:
+        push: true
+        tags: ${{ github.full_name }}:latest
 
         
       
