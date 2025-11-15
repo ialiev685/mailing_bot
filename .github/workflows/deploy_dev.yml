@@ -83,8 +83,9 @@ jobs:
         run: |
           docker run -d \
             --name app-container \
+            --network host \
             --env-file .env.dev \
-            -e POSTGRES_HOST_TESTING=host.docker.internal \
+            -e POSTGRES_HOST_TESTING=localhost \
             -p 3000:3000 \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
