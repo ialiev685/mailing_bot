@@ -53,7 +53,7 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         push: true
-        tags: ${{ env.REGISTRY }}/${{ github.full_name }}:latest
+        tags: ${{ env.REGISTRY }}/${{ github.repository }}:latest
 
         
       
