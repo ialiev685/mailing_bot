@@ -79,6 +79,7 @@ jobs:
           docker run -d \
             --name app-container \
             --env-file .env.dev \
+            -e POSTGRES_HOST_TESTING: db_testing_dev \
             -p 3000:3000 \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
