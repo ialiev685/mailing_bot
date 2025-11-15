@@ -1,13 +1,13 @@
 from logging.config import fileConfig
+from config import init_env_file
 from database.models import BaseModel
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
-from dotenv import load_dotenv
 from alembic import context
 
 import os
 
-load_dotenv(".env")
+init_env_file()
 
 DB_USER = os.getenv("POSTGRES_USER")
 DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")

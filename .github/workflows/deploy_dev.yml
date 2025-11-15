@@ -1,0 +1,42 @@
+name: Merge to dev branch
+# событие экшена
+on: 
+  workflow_dispatch:
+  push:
+    branches:
+      - dev
+  # pull_request:
+  #   types:
+  #     - opened
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs: 
+  test:
+    # services:
+    #   db_testing:
+    #     image: postgres:16-alpine
+    #     env:
+    #       POSTGRES_USER: test
+    #       POSTGRES_PASSWORD: test
+    #       POSTGRES_DB: test
+    #     ports:
+    #       - 5433:5432
+
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get repository code
+      uses: actions/checkout@v4
+
+    - name: Create .env file from secrets
+      run: echo "$ENV_CONTENT" > .env.dev
+      env:
+        ENV_CONTENT: ${{ secrets.ENV_DEV }}
+    - name: 'log'
+      run: 'echo ${{ env.REGISTRY }} / ${{ env.IMAGE_NAME }}'
+
+        
+      
+
+ 
