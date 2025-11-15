@@ -34,7 +34,7 @@ jobs:
       env:
         ENV_CONTENT: ${{ secrets.ENV_DEV }}
     - name: 'log'
-      run: 'echo ${{ env.REGISTRY }} / ${{ env.IMAGE_NAME }}'
+      run: 'echo ${{ github }}'
 
         
       
