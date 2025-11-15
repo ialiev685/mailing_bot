@@ -58,6 +58,11 @@ jobs:
     steps:
       - name: Get repository code
         uses: actions/checkout@v4
+
+      - name: Wait for PostgreSQL
+        run: |
+          until nc -z localhost 5435; do sleep 2; done
+          echo "✅ PostgreSQL is ready"
       
       - name: Login to Github registry
         uses: docker/login-action@v3
