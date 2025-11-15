@@ -27,6 +27,10 @@ jobs:
     #       - 5433:5432
 
     runs-on: ubuntu-latest
+    permissions:
+      contents: read      # Чтобы скачать код
+      packages: write     # Чтобы пушить Docker образ в GHCR
+      
     steps:
     - name: Get repository code
       uses: actions/checkout@v4
@@ -42,7 +46,7 @@ jobs:
     - name: Login to GitLab
       uses: docker/login-action@v3
       with:
-          registry: ${{ env.registry }}
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
