@@ -23,13 +23,6 @@ jobs:
     - name: Get repository code
       uses: actions/checkout@v4
 
-    - name: Create .env file from secrets
-      run: echo "$ENV_CONTENT" > .env.dev
-      env:
-        ENV_CONTENT: ${{ secrets.ENV_DEV }}
-    - name: logs
-      run: echo '${{ secrets.GITHUB_TOKEN }}'
-
     # авторизация с реестр github
     - name: Login to GitLab
       uses: docker/login-action@v3
@@ -37,13 +30,54 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Build and push
       uses: docker/build-push-action@v6
       with:
         push: true
-        tags: ${{ env.REGISTRY }}/${{ github.repository }}:latest
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
         
+  test:
+    services:
+      app:
+        image: ${{ env.REGISTRY }}/${{ github.repository }}:latest
+        env:
+          BOT_SENDER_ORDER_TOKEN: 1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
+          BOT_TOKEN: 1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
+          STAND: DEV
+
+        ports:
+          - 3000:3000
       
+      db_testing:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5433:5432
+
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read      
+      packages: write     
+
+    steps:
+      - name: Get repository code
+        uses: actions/checkout@v4
+
+      - name: Run test
+        run: docker-compose exec -T app make test
+
+
+
+      # - name: Create .env file from secrets
+      #   run: echo "$ENV_CONTENT" > .env.dev
+      #   env:
+      #     ENV_CONTENT: ${{ secrets.ENV_DEV }}
+
 
  
