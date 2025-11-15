@@ -13,7 +13,9 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs: 
-  test:
+  
+
+  build:
     # services:
     #   db_testing:
     #     image: postgres:16-alpine
@@ -33,8 +35,14 @@ jobs:
       run: echo "$ENV_CONTENT" > .env.dev
       env:
         ENV_CONTENT: ${{ secrets.ENV_DEV }}
-    - name: 'log'
-      run: echo '${{ toJSON(github) }}'
+
+    # авторизация с реестр github
+    - name: Login to GitLab
+      uses: docker/login-action@v3
+      with:
+          registry: ${{ env.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
         
       
