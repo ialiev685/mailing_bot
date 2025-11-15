@@ -13,19 +13,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs: 
-  
-
   build:
-    # services:
-    #   db_testing:
-    #     image: postgres:16-alpine
-    #     env:
-    #       POSTGRES_USER: test
-    #       POSTGRES_PASSWORD: test
-    #       POSTGRES_DB: test
-    #     ports:
-    #       - 5433:5432
-
     runs-on: ubuntu-latest
     permissions:
       contents: read      # Чтобы скачать код
