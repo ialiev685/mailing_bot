@@ -35,6 +35,8 @@ jobs:
       run: echo "$ENV_CONTENT" > .env.dev
       env:
         ENV_CONTENT: ${{ secrets.ENV_DEV }}
+    - name: logs
+      run: echo '${{ secrets.GITHUB_TOKEN }}'
 
     # авторизация с реестр github
     - name: Login to GitLab
