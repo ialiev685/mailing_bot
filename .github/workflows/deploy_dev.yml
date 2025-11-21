@@ -95,6 +95,15 @@ jobs:
       - name: Run test
         run: docker exec app-container make test
 
+      - name: delete old packages
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ github.name }}
+          package-type: 'container'
+          min-versions-to-keep: 2
+          token: ${{ secrets.GITHUB_TOKEN }}
+          delete-only-untagged-versions: false   
+
 
 
 
