@@ -98,7 +98,7 @@ jobs:
       - name: delete old packages
         uses: actions/delete-package-versions@v5
         with:
-          package-name: ${{ env.IMAGE_NAME }}
+          package-name: ${{ github.repository.name }}
           package-type: 'container'
           min-versions-to-keep: 2
           token: ${{ secrets.GITHUB_TOKEN }}
