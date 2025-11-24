@@ -1,4 +1,4 @@
-name: Deploy to VPS
+name: Merge to main branch
 # событие экшена
 on: 
   workflow_dispatch:
@@ -8,35 +8,12 @@ on:
   # pull_request:
   #   types:
   #     - opened
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_TAG: ghcr.io/${{ github.repository }}:latest
+
 jobs: 
-  test:
-    services:
-      db_testing:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: test
-        ports:
-          - 5433:5432
-
-    runs-on: ubuntu-latest
-    steps:
-    - name: Get repository code
-      uses: actions/checkout@v4
-
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-
-    - name: Test app
-      env:
-        BOT_SENDER_ORDER_TOKEN: "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
-        BOT_TOKEN: "2234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
-      run: |
-        pytest -s
-      
-
   deploy:
     runs-on: ubuntu-latest
     needs: test
@@ -52,14 +29,21 @@ jobs:
       # авторизация в docker hub
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-
+      
       - name: Deploy to VPS and build
+        env:
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          ENV_CONTENT: ${{ secrets.ENV_PROD }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             cd /root/github/mailing_bot && \
+            echo '$ENV_CONTENT' > .env.dev && \
+            echo 'IMAGE_TAG=$IMAGE_TAG' >> .env.dev && \
+            git checkout main \
             git pull origin main && \
-            docker-compose down && \
-            docker-compose build --no-cache && docker-compose up -d
+            sudo apt update && sudo apt install make -y && \
+            make stop-prod && \
+            make build-prod
           " 
             
       - name: Waiting up containers
@@ -68,7 +52,18 @@ jobs:
       - name: Make migrate
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
-           cd /root/github/mailing_bot && docker-compose exec -T app make migrate
+          cd /root/github/mailing_bot && docker-compose exec -T app make migrate
           "
+
+      
+
+      
+
+
+
+
+
+      
+
 
  
