@@ -123,9 +123,11 @@ jobs:
       - name: Deploy to VPS and build
         env:
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          ENV_CONTENT: ${{ secrets.ENV_DEV }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             cd /root/github/mailing_bot && \
+            echo "$ENV_CONTENT" > .env.dev&& \
             git fetch origin && \
             git checkout dev || git checkout -b dev origin/dev && \
             git pull origin dev && \
