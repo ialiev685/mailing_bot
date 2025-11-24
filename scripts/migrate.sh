@@ -10,6 +10,9 @@ if [ ! -d "alembic/versions" ]; then
     mkdir -p alembic/versions
 fi
 
+echo "🔄 Applying any pending migrations..."
+alembic upgrade head
+
 if alembic check; then
     echo "✅ No migration"
 else
