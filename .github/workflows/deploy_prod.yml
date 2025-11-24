@@ -16,7 +16,6 @@ env:
 jobs: 
   deploy:
     runs-on: ubuntu-latest
-    needs: test
     steps:
       - name: Get repository code
         uses: actions/checkout@v4
@@ -39,7 +38,7 @@ jobs:
             cd /root/github/mailing_bot && \
             echo '$ENV_CONTENT' > .env.dev && \
             echo 'IMAGE_TAG=$IMAGE_TAG' >> .env.dev && \
-            git checkout main \
+            git checkout main && \
             git pull origin main && \
             sudo apt update && sudo apt install make -y && \
             make stop-prod && \
