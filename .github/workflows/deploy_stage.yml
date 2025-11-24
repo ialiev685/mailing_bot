@@ -147,6 +147,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
            cd /root/github/mailing_bot && docker-compose exec -T app_dev make migrate
+          "
 
       
 
