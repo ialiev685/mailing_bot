@@ -17,7 +17,7 @@ build-dev:
 	sudo docker-compose --env-file .env.dev up -d --build
 
 build-stage:
-	docker-compose -f docker-compose-stage.yml p mailing_bot_stage --env-file .env.dev up -d --build
+	docker-compose -f docker-compose-stage.yml -p mailing_bot_stage --env-file .env.dev up -d --build
 
 build-prod:
 	docker-compose -f docker-compose-prod.yml --env-file .env.prod up -d --build
@@ -26,7 +26,7 @@ stop-dev:
 	sudo docker-compose down
 
 stop-stage:
-	sudo docker-compose -f docker-compose-stage.yml p mailing_bot_stage --env-file .env.dev down
+	sudo docker-compose -f docker-compose-stage.yml -p mailing_bot_stage --env-file .env.dev down
 
 stop-prod:
 	docker-compose -f docker-compose-prod.yml --env-file .env.prod down
