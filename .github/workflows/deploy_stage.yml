@@ -106,7 +106,7 @@ jobs:
           # delete-only-untagged-versions: false   
   deploy:
     runs-on: ubuntu-latest
-    needs: build
+    needs: test
     steps:
       - name: Get repository code
         uses: actions/checkout@v4
