@@ -2,9 +2,7 @@ version: "3.0"
 
 services:
   app_dev:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${IMAGE_TAG}
     env_file: .env.dev
     environment:
       # переиспользуем если приложение запускается с контенера

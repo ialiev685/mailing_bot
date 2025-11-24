@@ -132,7 +132,9 @@ if __name__ == "__main__":
             init_logger_config()
             if STAND == "DEV":
                 # для разработки
-                bot.infinity_polling(restart_on_change=True)
+                bot.infinity_polling()
+                # bot.infinity_polling(restart_on_change=True)
+
             else:
                 # для production
                 bot.infinity_polling()

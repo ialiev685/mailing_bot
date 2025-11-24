@@ -1,15 +1,13 @@
 import os
 from sqlalchemy import create_engine
+from config import init_env_file
 
-from dotenv import load_dotenv
-
-
-load_dotenv(".env")
+init_env_file()
 
 DB_USER = os.getenv("POSTGRES_USER")
 DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 DB_NAME = os.getenv("POSTGRES_DB")
-DB_HOST = os.getenv("POSTGRES_HOST")
+DB_HOST = os.getenv("POSTGRES_HOST", "localhost")
 DB_PORT = os.getenv("POSTGRES_PORT", 5432)
 
 
