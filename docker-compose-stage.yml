@@ -1,4 +1,4 @@
-version: "3.0"
+# version: "3.0"
 
 name: mailing_bot_stage
 services:
