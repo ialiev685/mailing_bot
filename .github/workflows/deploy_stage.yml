@@ -127,7 +127,10 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             cd /root/github/mailing_bot && \
-            echo "$ENV_CONTENT" > .env.dev&& \
+            cat > .env.dev << EOF
+            $ENV_CONTENT
+            IMAGE_TAG=$IMAGE_TAG
+            EOF
             git fetch origin && \
             git checkout dev || git checkout -b dev origin/dev && \
             git pull origin dev && \
