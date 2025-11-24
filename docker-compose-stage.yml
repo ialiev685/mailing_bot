@@ -1,6 +1,5 @@
-# version: "3.0"
-
 name: mailing_bot_stage
+
 services:
   app_dev:
     image: ${IMAGE_TAG}
