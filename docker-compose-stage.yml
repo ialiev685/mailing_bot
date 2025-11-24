@@ -1,4 +1,4 @@
-name: mailing_bot_stage
+version: "3.0"
 
 services:
   app_dev:
