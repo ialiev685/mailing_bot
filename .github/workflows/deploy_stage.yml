@@ -11,6 +11,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  IMAGE_TAG: ghcr.io/${{ github.repository }}:latest
 
 jobs: 
   build:
@@ -35,7 +36,7 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         push: true
-        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        tags: ${{ env.IMAGE_TAG }}
 
         
   test:
@@ -103,6 +104,45 @@ jobs:
           min-versions-to-keep: 2
           token: ${{ secrets.GITHUB_TOKEN }}
           # delete-only-untagged-versions: false   
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Get repository code
+        uses: actions/checkout@v4
+      
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # авторизация в docker hub
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+      
+      - name: Deploy to VPS and build
+        env:
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+            cd /root/github/mailing_bot && \
+            git pull origin main && \
+            export IMAGE_TAG=$IMAGE_TAG
+            make stop-stage && \
+            make build-stage
+          " 
+            
+      - name: Waiting up containers
+        run: sleep 5
+
+      - name: Make migrate
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+           cd /root/github/mailing_bot && docker-compose exec -T app_dev make migrate
+
+      
+
+      
 
 
 
