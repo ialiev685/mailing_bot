@@ -126,9 +126,10 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             cd /root/github/mailing_bot && \
-            git pull origin main && \
+            git checkout dev && \
+            git pull origin dev && \
             export IMAGE_TAG=$IMAGE_TAG && \
-            sudo apt update && sudo apt install make && \
+            sudo apt update && sudo apt install make -y && \
             make stop-stage && \
             make build-stage
           " 
