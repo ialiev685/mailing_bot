@@ -4,10 +4,10 @@ create-migrate:
 	bash ./scripts/create-migrate.sh "${NAME}"
 
 migrate-prod:
-	docker-compose -f docker-compose-prod.yml exec app alembic upgrade head
+	docker-compose -f docker-compose-prod.yml exec -T app alembic upgrade head
 
 migrate-dev:
-	docker-compose -p mailing_bot_stage exec app_dev alembic upgrade head
+	docker-compose -p mailing_bot_stage exec -T app_dev alembic upgrade head
 
 dev:
 	STAND=DEV python main.py
