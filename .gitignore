@@ -194,6 +194,4 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
-alembic/versions
-alembic/versions/**
 logs.log
