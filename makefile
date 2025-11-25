@@ -1,7 +1,13 @@
 NAME ?= auto_migration
 
-migrate:
-	bash ./scripts/migrate.sh "${NAME}"
+create-migrate:
+	bash ./scripts/create-migrate.sh "${NAME}"
+
+migrate-prod:
+	docker-compose -f docker-compose-prod.yml exec -T app alembic upgrade head
+
+migrate-dev:
+	docker-compose -p mailing_bot_stage exec -T app_dev alembic upgrade head
 
 dev:
 	STAND=DEV python main.py
@@ -17,7 +23,7 @@ build-dev:
 	sudo docker-compose --env-file .env.dev up -d --build
 
 build-stage:
-	docker-compose -f docker-compose-stage.yml --env-file .env.dev up -d --build
+	docker-compose -f docker-compose-stage.yml -p mailing_bot_stage --env-file .env.dev up -d --build
 
 build-prod:
 	docker-compose -f docker-compose-prod.yml --env-file .env.prod up -d --build
@@ -26,7 +32,7 @@ stop-dev:
 	sudo docker-compose down
 
 stop-stage:
-	sudo docker-compose -f docker-compose-stage.yml --env-file .env.dev down
+	sudo docker-compose -f docker-compose-stage.yml -p mailing_bot_stage --env-file .env.dev down
 
 stop-prod:
 	docker-compose -f docker-compose-prod.yml --env-file .env.prod down
