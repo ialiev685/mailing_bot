@@ -3,8 +3,11 @@ NAME ?= auto_migration
 create-migrate:
 	bash ./scripts/create-migrate.sh "${NAME}"
 
-migrate:
-	alembic upgrade head
+migrate-prod:
+	docker-compose -f docker-compose-prod.yml exec app alembic upgrade head
+
+migrate-dev:
+	docker-compose -p mailing_bot_stage exec app_dev alembic upgrade head
 
 dev:
 	STAND=DEV python main.py
