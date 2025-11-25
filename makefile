@@ -1,7 +1,10 @@
 NAME ?= auto_migration
 
+create-migrate:
+	bash ./scripts/create-migrate.sh "${NAME}"
+
 migrate:
-	bash ./scripts/migrate.sh "${NAME}"
+	alembic upgrade head
 
 dev:
 	STAND=DEV python main.py
