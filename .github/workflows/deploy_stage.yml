@@ -122,7 +122,7 @@ jobs:
       
       - name: Deploy to VPS and build
         env:
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          IMAGE_TAG: ${{ needs.extract-release-tag.outputs.release-tag }}
           ENV_CONTENT: ${{ secrets.ENV_DEV }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
@@ -130,8 +130,16 @@ jobs:
             echo '$ENV_CONTENT' > .env.dev && \
             echo 'IMAGE_TAG=$IMAGE_TAG' >> .env.dev && \
             git fetch origin && \
-            git checkout dev || git checkout -b dev origin/dev && \
-            git pull origin dev && \
+
+            # Переключаемся на соответствующую ветку
+            if [[ '$IMAGE_TAG' != 'latest' ]]; then
+              git checkout release/$IMAGE_TAG || git checkout -b release/$IMAGE_TAG origin/release/$IMAGE_TAG
+              git pull origin release/$IMAGE_TAG
+            else
+              git checkout dev || git checkout -b dev origin/dev
+              git pull origin dev
+            fi  && \
+
             sudo apt update && sudo apt install make -y && \
             make stop-stage && \
             make build-stage
