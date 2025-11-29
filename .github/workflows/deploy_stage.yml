@@ -1,19 +1,34 @@
-name: Merge to release branch
+name: Merge to stage branch
 # событие экшена
 on: 
   workflow_dispatch:
   push:
     branches:
-      - dev
+      # - dev
+      - 'release/**'
   # pull_request:
   #   types:
   #     - opened
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  IMAGE_TAG: ghcr.io/${{ github.repository }}:latest
+  # IMAGE_TAG: ghcr.io/${{ github.repository }}:latest
 
 jobs: 
+  extract-release-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      release-tag: ${{ steps.extract-tag.outputs.release-tag }}
+    steps:
+      - name: Extract release tag from branch name
+        id: extract-tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            RELEASE_TAG=$(echo "${{ github.ref }}" | sed 's|refs/heads/release/||')
+            echo "release-tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+          else
+            echo "release-tag=latest" >> $GITHUB_OUTPUT
+          fi 
   build:
     runs-on: ubuntu-latest
     permissions:
@@ -36,7 +51,7 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         push: true
-        tags: ${{ env.IMAGE_TAG }}
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.extract-release-tag.outputs.release-tag }}
 
         
   test:
@@ -73,7 +88,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pull app image from registry
-        run: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        run: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.extract-release-tag.outputs.release-tag }}
 
       - name: Create .env file from secrets
         run: echo "$ENV_CONTENT" > .env.dev
@@ -88,7 +103,7 @@ jobs:
             --env-file .env.dev \
             -e POSTGRES_HOST_TESTING=localhost \
             -p 3000:3000 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.extract-release-tag.outputs.release-tag }}
 
       - name: Waiting up containers
         run: sleep 5
@@ -122,7 +137,8 @@ jobs:
       
       - name: Deploy to VPS and build
         env:
-          IMAGE_TAG: ${{ needs.extract-release-tag.outputs.release-tag }}
+          IMAGE_TAG: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.extract-release-tag.outputs.release-tag }}
+          RELEASE_TAG: ${{ needs.extract-release-tag.outputs.release-tag }}
           ENV_CONTENT: ${{ secrets.ENV_DEV }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
@@ -131,10 +147,10 @@ jobs:
             echo 'IMAGE_TAG=$IMAGE_TAG' >> .env.dev && \
             git fetch origin && \
 
-            # Переключаемся на соответствующую ветку
+
             if [[ '$IMAGE_TAG' != 'latest' ]]; then
-              git checkout release/$IMAGE_TAG || git checkout -b release/$IMAGE_TAG origin/release/$IMAGE_TAG
-              git pull origin release/$IMAGE_TAG
+              git checkout release/$RELEASE_TAG || git checkout -b release/$RELEASE_TAG origin/release/$RELEASE_TAG
+              git pull origin release/$RELEASE_TAG
             else
               git checkout dev || git checkout -b dev origin/dev
               git pull origin dev
