@@ -1,4 +1,4 @@
-name: Merge to dev branch
+name: Merge to release branch
 # событие экшена
 on: 
   workflow_dispatch:
