@@ -88,7 +88,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pull app image from registry
-        run: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.extract-release-tag.outputs.release-tag }}
+        run: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.extract-release-tag.outputs.release-tag }}
 
       - name: Create .env file from secrets
         run: echo "$ENV_CONTENT" > .env.dev
